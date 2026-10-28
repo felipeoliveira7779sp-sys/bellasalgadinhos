@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useServerFn } from "@tanstack/react-start";
 import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
 import { createOrder } from "@/lib/menu.functions";
+import { applyCatalogChoices, cakeFlavors, fixedComboDrinks, kitChecklist, packFlavorLimit, partyKitDrinks, splitFriedProducts, usesFlavorQuantities } from "@/lib/menu-rules";
 import {
   LIMITE_KM,
   TABELA_FRETE,
@@ -43,9 +44,10 @@ type CartItem = {
   qty: number;
   unitPrice: number;
   sizeLabel: string;
-  flavors: string;
+  flavors: string[];
   singleFlavor: string;
-  choices: string;
+  choices: Record<string, string>;
+  checklist: string[];
   obs: string;
 };
 
@@ -88,6 +90,51 @@ const caixa = (bg: string, borda: string, cor: string): React.CSSProperties => (
   gap: 4,
 });
 
+function normalizarTexto(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getNumeroDoNome(p: Product, prefixo: string): number | null {
+  const nome = normalizarTexto(p.name);
+  const m = nome.match(new RegExp(`${prefixo}\\s*(\\d+)`));
+  return m?.[1] ? Number(m[1]) : null;
+}
+
+function aplicarRegrasCatalogo(p: Product): Product {
+  const nome = normalizarTexto(p.name);
+  const baseFlavors = p.flavors?.length ? p.flavors : [
+    "Coxinha", "Milho", "Queijo", "Calabresa", "Napolitano", "Carne", "Kibe", "Bolinho de Queijo",
+  ];
+
+  if (nome.includes("combo")) {
+    const numero = getNumeroDoNome(p, "combo");
+    const limite = numero === 1 ? 2 : numero === 2 ? 3 : numero === 3 ? 4 : undefined;
+    const drinks = numero ? fixedComboDrinks(numero) : p.choice_groups;
+    return {
+      ...p,
+      flavors: baseFlavors,
+      single_flavors: [],
+      units_per_flavor: limite ? 1 : 0,
+      units_base: limite ?? null,
+      choice_groups: drinks ?? [],
+    };
+  }
+
+  if (nome.includes("kit festa")) {
+    const numero = getNumeroDoNome(p, "kit festa");
+    return {
+      ...p,
+      flavors: baseFlavors,
+      single_flavors: cakeFlavors,
+      units_per_flavor: 0,
+      units_base: null,
+      choice_groups: numero ? partyKitDrinks(numero) : (p.choice_groups ?? []),
+    };
+  }
+
+  return p;
+}
+
 function Cardapio() {
   const { data, isLoading, isError } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu, refetchInterval: 60_000 });
   const doCreateOrder = useServerFn(createOrder);
@@ -98,6 +145,8 @@ function Cardapio() {
   const [sizeIdx, setSizeIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [flavors, setFlavors] = useState<string[]>([]);
+  const [flavorQtys, setFlavorQtys] = useState<Record<string, number>>({});
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [single, setSingle] = useState("");
   const [obs, setObs] = useState("");
   const [sortido, setSortido] = useState(false);
@@ -106,6 +155,7 @@ function Cardapio() {
   // Carrinho e pedido
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("");
   const [tipo, setTipo] = useState<"entrega" | "retirada">("entrega");
   const [nome, setNome] = useState("");
   const [tel, setTel] = useState("");
@@ -133,6 +183,7 @@ function Cardapio() {
 
   const store = data?.store ?? null;
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
+  const effectiveKitChecklist = open ? kitChecklist(open) : [];
   const whatsLoja = (store?.whatsapp ?? "").replace(/\D/g, "");
   const lojaCoords: CoordenadaGeo | null =
     store && store.store_lat !== null && store.store_lon !== null
@@ -141,16 +192,82 @@ function Cardapio() {
 
   const grupos = useMemo(() => {
     if (!data) return [];
-    return [...data.categories]
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+    const iconFor = (title: string) => {
+      const t = normalizarTexto(title);
+      if (t.includes("frito")) return "🥟";
+      if (t.includes("lanche")) return "🥐";
+      if (t.includes("congelado")) return "❄️";
+      if (t.includes("kit") || t.includes("combo")) return "🎁";
+      if (t.includes("refrigerante") || t.includes("bebida") || t.includes("lata") || t.includes("suco")) return "🥤";
+      if (t.includes("mini pizza") || t.includes("pizza")) return "🍕";
+      if (t.includes("empada")) return "🥧";
+      if (t.includes("doce")) return "🍬";
+      if (t.includes("bolo")) return "🎂";
+      return "🍴";
+    };
+
+    const preferred = ["salgados fritos", "salgados tamanho lanche", "salgados congelados", "kits festa", "combos", "bebidas", "refrigerantes", "latas", "mini pizza", "empadas", "doces", "bolos"];
+    const rank = (title: string) => {
+      const t = normalizarTexto(title);
+      const i = preferred.findIndex((x) => t === x || t.includes(x));
+      return i < 0 ? 999 : i;
+    };
+
+    const base = [...data.categories]
+      .sort((a, b) => rank(a.title) - rank(b.title) || (a.position ?? 0) - (b.position ?? 0))
       .map((c) => ({
         ...c,
         items: [...data.products]
-          .filter((p) => p.category_id === c.id) // não descarta p.active:false
+          .map(applyCatalogChoices)
+          .filter((p) => p.category_id === c.id)
+          .map((p) => ({
+            ...p,
+            ...(usesFlavorQuantities(p, c.title) ? { _qtyModeCategoria: true } : {}),
+          }))
+          .map((p) => aplicarRegrasCatalogo(p))
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
       }))
       .filter((c) => c.items.length > 0);
+
+    const bebida = base.filter((c) => {
+      const t = normalizarTexto(c.title);
+      return t.includes("bebida") || t.includes("refrigerante") || t.includes("lata") || t.includes("suco");
+    });
+    const outras = base.filter((c) => !bebida.includes(c));
+
+    const resultado = [...outras];
+    if (bebida.length > 0) {
+      resultado.push({
+        ...bebida[0],
+        id: "__bebidas",
+        title: "🥤 Bebidas",
+        items: bebida.flatMap((c) => c.items),
+      });
+    }
+
+    return resultado.flatMap((c) => {
+      if (normalizarTexto(c.title).replace(/^.*? /, "") !== "salgados fritos" && normalizarTexto(c.title) !== "salgados fritos") return [c];
+      return splitFriedProducts(c.items).map((group, index) => ({
+        ...c,
+        id: `${c.id}-fritos-${index}`,
+        title: `${iconFor(c.title)} ${group.title.replace(/^Salgados Fritos\s*[—-]?\s*/i, "")}`.trim(),
+        items: group.items,
+      }));
+    }).map((c) => ({ ...c, title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}` }));
   }, [data]);
+
+  useEffect(() => {
+    if (!grupos.length) return;
+    if (!activeCategory) setActiveCategory(grupos[0].id);
+    const sections = grupos.map((g) => document.getElementById(`sec-${g.id}`)).filter(Boolean) as HTMLElement[];
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible?.target?.id) setActiveCategory(visible.target.id.replace(/^sec-/, ""));
+    }, { rootMargin: "-90px 0px -65% 0px", threshold: [0.1, 0.5] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [grupos, activeCategory]);
 
   const unitPrice = open
     ? open.sizes.length > 0
@@ -158,14 +275,18 @@ function Cardapio() {
       : (open.price ?? 0)
     : 0;
 
+  const categoryTitle = open ? data?.categories.find((c) => c.id === open.category_id)?.title : undefined;
   const maxSabores = open
-    ? Math.min(
+    ? (packFlavorLimit(open, sizeIdx, categoryTitle) ?? Math.min(
         open.flavors.length,
         open.units_base
           ? Math.max(1, Math.floor((open.units_base * qty) / (open.units_per_flavor || 25)))
           : open.flavors.length,
-      )
+      ))
     : 0;
+  const isQtyMode = open ? Boolean((open as Product & { _qtyModeCategoria?: boolean })._qtyModeCategoria) : false;
+  const listaSaboresQty = open ? (open.flavors?.length ? open.flavors : open.single_flavors ?? []) : [];
+  const totalFlavorQty = Object.values(flavorQtys).reduce((a, b) => a + b, 0);
 
   // ----- Frete -----
   const faixaManualObj = faixaManual !== "" ? TABELA_FRETE[Number(faixaManual)] : undefined;
@@ -194,10 +315,20 @@ function Cardapio() {
     setSizeIdx(0);
     setQty(1);
     setFlavors([]);
-    setSingle(p.single_flavors[0] ?? "");
+    setFlavorQtys({});
+    setChecklist({});
+    setSingle("");
     setObs("");
     setSortido(false);
     setChoices({});
+  }
+
+  function incFlavorQty(f: string) {
+    setFlavorQtys((current) => ({ ...current, [f]: (current[f] ?? 0) + 1 }));
+  }
+
+  function decFlavorQty(f: string) {
+    setFlavorQtys((current) => ({ ...current, [f]: Math.max(0, (current[f] ?? 0) - 1) }));
   }
 
   function toggleFlavor(f: string) {
@@ -213,26 +344,57 @@ function Cardapio() {
 
   function addToCart() {
     if (!open) return;
-    if (open.flavors.length > 0 && !sortido && flavors.length === 0) {
+
+    if (isQtyMode) {
+      if (totalFlavorQty === 0) {
+        alert("Por favor, escolha a quantidade de pelo menos 1 sabor.");
+        return;
+      }
+    } else if (open.flavors.length > 0 && !sortido && flavors.length === 0) {
       alert("Por favor, marque pelo menos 1 sabor (ou escolha Sortidos).");
       return;
     }
-    const faltando = effectiveChoiceGroups.find((g) => !choices[g.title]);
+
+    if (!isQtyMode && !sortido && flavors.length > maxSabores) {
+      alert(`Escolha no máximo ${maxSabores} sabores para este tamanho.`);
+      return;
+    }
+
+    if (open.single_flavors.length > 0 && !single) {
+      alert("Escolha o sabor obrigatório.");
+      return;
+    }
+
+    const faltando = isQtyMode ? undefined : effectiveChoiceGroups.find((g) => !choices[g.title]);
     if (faltando) {
       alert(`Por favor, selecione uma opção para: "${faltando.title}"`);
       return;
     }
-    setCart((c) => [
-      ...c,
+
+    if (effectiveKitChecklist.length > 0) {
+      const faltandoChecklist = effectiveKitChecklist.find((item) => !checklist[item.title]);
+      if (faltandoChecklist) {
+        alert(`Marque para confirmar: "${faltandoChecklist.title}"`);
+        return;
+      }
+    }
+
+    const flavorsValue = isQtyMode
+      ? Object.entries(flavorQtys).filter(([, value]) => value > 0).map(([flavor, value]) => `${value}x ${flavor}`)
+      : open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [];
+
+    setCart((current) => [
+      ...current,
       {
         key: Date.now(),
         name: open.name,
-        qty,
+        qty: isQtyMode ? totalFlavorQty : qty,
         unitPrice,
         sizeLabel: open.sizes[sizeIdx]?.label ?? "",
-        flavors: open.flavors.length > 0 ? (sortido ? "Sortidos" : flavors.join(", ")) : "",
-        singleFlavor: open.single_flavors.length > 0 ? single : "",
-        choices: effectiveChoiceGroups.map((g) => `${g.title}: ${choices[g.title]}`).join(" | "),
+        flavors: flavorsValue,
+        singleFlavor: !isQtyMode && open.single_flavors.length > 0 ? single : "",
+        choices: isQtyMode ? {} : Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title]])),
+        checklist: effectiveKitChecklist.map((item) => `✓ ${item.title}`),
         obs,
       },
     ]);
@@ -387,9 +549,10 @@ function Cardapio() {
       txt += `• *${i.qty}x ${i.name}*`;
       if (i.sizeLabel) txt += ` (${i.sizeLabel})`;
       txt += ` - ${money(i.unitPrice * i.qty)}\n`;
-      if (i.flavors) txt += `   _Sabores: ${i.flavors}_\n`;
+      if (i.flavors.length) txt += `   _Sabores: ${i.flavors.join(", ")}_\n`;
       if (i.singleFlavor) txt += `   _Sabor: ${i.singleFlavor}_\n`;
-      if (i.choices) txt += `   _Escolhas: ${i.choices}_\n`;
+      if (Object.keys(i.choices).length) txt += `   _Escolhas: ${Object.entries(i.choices).map(([k, v]) => `${k}: ${v}`).join(" | ")}_\n`;
+      if (i.checklist.length) txt += `   _Itens do kit: ${i.checklist.join(", ")}_\n`;
       if (i.obs) txt += `   _Obs: ${i.obs}_\n`;
     });
     txt += `\n💳 *Pagamento:* ${pagamento}`;
@@ -471,10 +634,11 @@ function Cardapio() {
           {grupos.map((c, i) => (
             <button
               key={c.id}
-              className={`nav-item ${i === 0 ? "active" : ""}`}
-              onClick={() =>
-                document.getElementById(`sec-${c.id}`)?.scrollIntoView({ behavior: "smooth" })
-              }
+              className={`nav-item ${activeCategory === c.id || (!activeCategory && i === 0) ? "active" : ""}`}
+              onClick={() => {
+                setActiveCategory(c.id);
+                document.getElementById(`sec-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
             >
               {c.title}
             </button>
@@ -522,7 +686,7 @@ function Cardapio() {
                           width: "fit-content",
                         }}
                       >
-                        Indisponível no momento
+                        Esgotado
                       </span>
                     )}
                     <h3 className="product-title">{p.name}</h3>
@@ -597,7 +761,7 @@ function Cardapio() {
               <p className="modal-desc" style={{ whiteSpace: "pre-line" }}>
                 {open.description}
               </p>
-              <p className="modal-price">{money(unitPrice)}</p>
+              <p className="modal-price">{money(isQtyMode ? unitPrice * totalFlavorQty : unitPrice)}</p>
 
               {open.sizes.length > 0 ? (
                 <div className="size-selector">
@@ -605,7 +769,11 @@ function Cardapio() {
                     <button
                       key={s.label}
                       className={`size-option ${i === sizeIdx ? "selected" : ""}`}
-                      onClick={() => setSizeIdx(i)}
+                      onClick={() => {
+                        setSizeIdx(i);
+                        setFlavors([]);
+                        setSortido(false);
+                      }}
                     >
                       <div className="size-option-label">{s.label}</div>
                       <div className="size-option-price">{money(s.price)}</div>
@@ -614,7 +782,26 @@ function Cardapio() {
                 </div>
               ) : null}
 
-              {open.flavors.length > 0 && open.allow_assorted ? (
+              {isQtyMode ? (
+                <div className="obs-box" style={{ marginBottom: 12 }}>
+                  <b style={{ fontSize: "0.9rem" }}>Sabores — escolha a quantidade de cada um</b>
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    {listaSaboresQty.map((flavor) => (
+                      <div key={flavor} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ fontSize: "0.9rem" }}>{flavor}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <button type="button" onClick={() => decFlavorQty(flavor)} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #d1d5db", background: "#fff" }}>-</button>
+                          <b style={{ minWidth: 20, textAlign: "center" }}>{flavorQtys[flavor] ?? 0}</b>
+                          <button type="button" onClick={() => incFlavorQty(flavor)} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #d1d5db", background: "#fff" }}>+</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: "0.8rem", color: "#15803d", fontWeight: 700 }}>Total: {totalFlavorQty} unidade(s)</div>
+                </div>
+              ) : null}
+
+              {!isQtyMode && open.flavors.length > 0 && open.allow_assorted ? (
                 <div className="delivery-options" style={{ marginBottom: 12 }}>
                   <button
                     className={`delivery-option ${!sortido ? "selected" : ""}`}
@@ -631,7 +818,7 @@ function Cardapio() {
                 </div>
               ) : null}
 
-              {open.flavors.length > 0 && !sortido ? (
+              {!isQtyMode && open.flavors.length > 0 && !sortido ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
                   <b style={{ fontSize: "0.9rem" }}>Sabores (escolha até {maxSabores})</b>
                   <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
@@ -676,6 +863,20 @@ function Cardapio() {
                 </div>
               ) : null}
 
+              {effectiveKitChecklist.length > 0 ? (
+                <div className="obs-box" style={{ marginBottom: 12 }}>
+                  <b style={{ fontSize: "0.9rem", color: "#9a3412" }}>Itens inclusos no kit — marque para confirmar</b>
+                  <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
+                    {effectiveKitChecklist.map((item) => (
+                      <label key={item.title} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.9rem" }}>
+                        <input type="checkbox" checked={Boolean(checklist[item.title])} onChange={() => setChecklist((current) => ({ ...current, [item.title]: !current[item.title] }))} style={{ width: 18, height: 18, accentColor: "#b45309" }} />
+                        {item.title}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {effectiveChoiceGroups.map((g) => (
                 <div className="obs-box" style={{ marginBottom: 12 }} key={g.title}>
                   <b style={{ fontSize: "0.9rem", color: "#9a3412" }}>
@@ -713,17 +914,37 @@ function Cardapio() {
             </div>
             <div className="modal-footer">
               <div className="qty-controls">
-                <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}>
+                <button
+                  className="qty-btn"
+                  onClick={() => {
+                    if (!isQtyMode) {
+                      setQty((q) => Math.max(1, q - 1));
+                      return;
+                    }
+                    const selected = Object.keys(flavorQtys).filter((flavor) => (flavorQtys[flavor] ?? 0) > 0).pop();
+                    if (selected) decFlavorQty(selected);
+                  }}
+                >
                   -
                 </button>
-                <span className="qty-value">{qty}</span>
-                <button className="qty-btn" onClick={() => setQty((q) => q + 1)}>
+                <span className="qty-value">{isQtyMode ? totalFlavorQty : qty}</span>
+                <button
+                  className="qty-btn"
+                  onClick={() => {
+                    if (!isQtyMode) {
+                      setQty((q) => q + 1);
+                      return;
+                    }
+                    const selected = Object.keys(flavorQtys).find((flavor) => (flavorQtys[flavor] ?? 0) > 0) ?? listaSaboresQty[0];
+                    if (selected) incFlavorQty(selected);
+                  }}
+                >
                   +
                 </button>
               </div>
               <button className="btn-add" onClick={addToCart}>
                 <span>Adicionar</span>
-                <span>{money(unitPrice * qty)}</span>
+                <span>{money(unitPrice * (isQtyMode ? totalFlavorQty : qty))}</span>
               </button>
             </div>
           </>
@@ -747,14 +968,19 @@ function Cardapio() {
                   {i.qty}x {i.name}
                 </b>
                 {i.sizeLabel ? <span className="cart-item-add-text">{i.sizeLabel}</span> : null}
-                {i.flavors ? (
+                {i.flavors.length > 0 ? (
                   <span className="cart-item-add-text" style={{ color: "#b45309" }}>
-                    Sabores: {i.flavors}
+                    Sabores: {i.flavors.join(", ")}
                   </span>
                 ) : null}
-                {i.choices ? (
+                {Object.keys(i.choices).length > 0 ? (
                   <span className="cart-item-add-text" style={{ color: "#b45309" }}>
-                    Escolhas: {i.choices}
+                    Escolhas: {Object.entries(i.choices).map(([k, v]) => `${k}: ${v}`).join(" | ")}
+                  </span>
+                ) : null}
+                {i.checklist.length ? (
+                  <span className="cart-item-add-text" style={{ color: "#15803d" }}>
+                    Itens do kit: {i.checklist.join(", ")}
                   </span>
                 ) : null}
                 {i.singleFlavor ? (
