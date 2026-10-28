@@ -170,6 +170,20 @@ export const uploadImage = createServerFn({ method: "POST" })
   });
 
 // ================= Pedidos =================
+const orderItemSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  qty: z.number().int().min(1),
+  unitPrice: z.number().nonnegative(),
+  sizeLabel: z.string().optional().default(""),
+  // O cardápio novo envia arrays; string permanece aceita para pedidos antigos.
+  flavors: z.union([z.array(z.string()), z.string()]).optional().default([]),
+  singleFlavor: z.string().optional().default(""),
+  // O cardápio novo envia objeto de escolhas; string permanece aceita para pedidos antigos.
+  choices: z.union([z.record(z.string(), z.string()), z.string()]).optional().default({}),
+  checklist: z.array(z.string()).optional().default([]),
+  obs: z.string().optional().default(""),
+});
+
 const orderSchema = z.object({
   customer_name: z.string().trim().min(1).max(120),
   customer_phone: z.string().trim().min(1).max(40),
@@ -187,21 +201,7 @@ const orderSchema = z.object({
   surcharge: z.number().min(0),
   subtotal: z.number().min(0),
   total: z.number().min(0),
-  items: z
-    .array(
-      z.object({
-        name: z.string(),
-        qty: z.number().int().min(1),
-        unitPrice: z.number(),
-        sizeLabel: z.string(),
-        flavors: z.string(),
-        singleFlavor: z.string(),
-        choices: z.string(),
-        obs: z.string(),
-      }),
-    )
-    .min(1)
-    .max(100),
+  items: z.array(orderItemSchema).min(1).max(100),
 });
 
 export const createOrder = createServerFn({ method: "POST" })
