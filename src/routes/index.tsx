@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 
-import { fetchMenu, money, type Product, type Size } from "@/lib/menu-data";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
+import { createOrder } from "@/lib/menu.functions";
 import {
   LIMITE_KM,
   TABELA_FRETE,
@@ -58,13 +60,6 @@ type CalcFrete = {
 
 const CALC_VAZIO: CalcFrete = { status: "idle", km: null, estimada: false, mensagem: "" };
 
-// TROQUE AQUI: dias e horário de funcionamento (Seg-Sáb, 13h às 21h)
-function lojaAberta() {
-  const now = new Date();
-  const dia = now.getDay();
-  const t = now.getHours() + now.getMinutes() / 60;
-  return dia >= 1 && dia <= 6 && t >= 13 && t < 21;
-}
 
 function basePrice(p: Product) {
   return p.price ?? (p.sizes[0]?.price ?? 0);
@@ -94,7 +89,9 @@ const caixa = (bg: string, borda: string, cor: string): React.CSSProperties => (
 });
 
 function Cardapio() {
-  const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu });
+  const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu, refetchInterval: 60_000 });
+  const doCreateOrder = useServerFn(createOrder);
+  const [enviando, setEnviando] = useState(false);
 
   // Produto aberto
   const [open, setOpen] = useState<Product | null>(null);
@@ -344,7 +341,12 @@ function Cardapio() {
     void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente }, id);
   }
 
-  function sendOrder() {
+  async function sendOrder() {
+    if (enviando) return;
+    if (!lojaEstaAberta(store?.open_status)) {
+      alert("A loja está fechada no momento. Tente novamente no horário de funcionamento.");
+      return;
+    }
     if (!nome || !tel || !dataPedido || !horario || !pagamento) {
       alert("Preencha todos os campos obrigatórios!");
       return;
@@ -401,13 +403,44 @@ function Cardapio() {
     }
     txt += `\n💰 *TOTAL:* ${money(subtotal + taxaTotal)}`;
 
-    window.open(
-      `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(txt)}`,
-      "_blank",
-    );
+    // Grava o pedido antes de ir para o WhatsApp
+    setEnviando(true);
+    try {
+      const { id } = await doCreateOrder({
+        data: {
+          customer_name: nome,
+          customer_phone: tel,
+          order_type: tipo,
+          scheduled_date: dataPedido,
+          scheduled_time: horario,
+          payment_method: pagamento,
+          change_for: pagamento === "Dinheiro" && troco ? troco : null,
+          cep: tipo === "entrega" && cep ? cep : null,
+          address:
+            tipo === "entrega"
+              ? `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""} - ${bairro}, ${cidade}${uf ? `/${uf}` : ""}`
+              : null,
+          distance_km: tipo === "entrega" ? kmAtual : null,
+          distance_estimated: tipo === "entrega" && (calc.estimada || Boolean(faixaManualObj)),
+          delivery_fee: tipo === "entrega" && frete ? frete.taxa : 0,
+          return_fee_applied: Boolean(tipo === "entrega" && frete?.cobraRetorno),
+          surcharge: sobretaxaAplicada,
+          subtotal,
+          total: subtotal + taxaTotal,
+          items: cart.map(({ key: _k, ...i }) => i),
+        },
+      });
+      txt = `🧾 *Pedido nº ${id.slice(0, 8).toUpperCase()}*\n` + txt;
+    } catch (e) {
+      setEnviando(false);
+      alert(e instanceof Error ? e.message : "Não foi possível registrar o pedido.");
+      return;
+    }
+    setEnviando(false);
+    window.location.href = `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(txt)}`;
   }
 
-  const aberto = lojaAberta();
+  const aberto = lojaEstaAberta(store?.open_status);
   const semPonto = !lojaCoords;
   const mostrarFaixaManual = tipo === "entrega" && (calc.status === "erro" || semPonto);
 
@@ -1017,7 +1050,7 @@ function Cardapio() {
             </div>
           </div>
 
-          <button className="btn-whatsapp" onClick={sendOrder}>
+          <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || !aberto}>
             Enviar Pedido no WhatsApp
           </button>
         </div>
