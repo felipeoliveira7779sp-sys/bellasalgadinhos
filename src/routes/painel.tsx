@@ -3,7 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
-import { fetchMenu, money, type Category, type Product, type Size, type Store } from "@/lib/menu-data";
+import {
+  fetchMenu,
+  lojaEstaAberta,
+  money,
+  type Category,
+  type OpenStatus,
+  type Product,
+  type Size,
+  type Store,
+} from "@/lib/menu-data";
 import {
   deleteCategory,
   deleteProduct,
@@ -158,6 +167,7 @@ function PainelConteudo({ password }: { password: string }) {
         surcharge_active: false,
         surcharge_amount: 2,
         surcharge_label: "Dia de chuva, feriado ou alta demanda",
+        open_status: "auto",
       });
   }, [data]);
 
@@ -213,6 +223,7 @@ function PainelConteudo({ password }: { password: string }) {
           surcharge_active: dados.surcharge_active,
           surcharge_amount: dados.surcharge_amount,
           surcharge_label: dados.surcharge_label,
+          open_status: dados.open_status,
         },
       });
       if (mostrarMsg) flash("Dados da loja salvos!");
@@ -231,6 +242,14 @@ function PainelConteudo({ password }: { password: string }) {
     setStore(novo);
     const ok = await salvarLoja(novo, false);
     flash(ok ? (ativo ? "Taxa adicional LIGADA" : "Taxa adicional desligada") : "Não consegui salvar");
+  }
+
+  async function mudarAbertura(status: OpenStatus) {
+    if (!store) return;
+    const novo = { ...store, open_status: status };
+    setStore(novo);
+    const ok = await salvarLoja(novo, false);
+    flash(ok ? "Status da loja atualizado" : "Não consegui salvar");
   }
 
   async function localizarLoja() {
@@ -377,6 +396,36 @@ function PainelConteudo({ password }: { password: string }) {
             }}
           >
             {msg}
+          </div>
+        ) : null}
+
+        {/* Abertura da loja */}
+        {store ? (
+          <div style={card}>
+            <h2 style={{ fontWeight: 600, marginBottom: 6 }}>Abertura da loja</h2>
+            <p style={dica}>
+              Agora o cardápio mostra:{" "}
+              <b>{lojaEstaAberta(store.open_status) ? "ABERTA" : "FECHADA"}</b>
+              {store.open_status === "auto" ? " (seguindo o horário Seg-Sáb 13h-21h)" : " (forçado por você)"}
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {(
+                [
+                  ["auto", "Automático (horário)"],
+                  ["open", "Forçar aberta"],
+                  ["closed", "Forçar fechada"],
+                ] as [OpenStatus, string][]
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  style={store.open_status === v ? btn : btnGhost}
+                  onClick={() => void mudarAbertura(v)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
 

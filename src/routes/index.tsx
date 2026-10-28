@@ -1051,7 +1051,7 @@ function Cardapio() {
           </div>
 
           <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || !aberto}>
-            Enviar Pedido no WhatsApp
+            {!aberto ? "Loja fechada no momento" : enviando ? "Registrando pedido..." : "Enviar Pedido no WhatsApp"}
           </button>
         </div>
       </div>
