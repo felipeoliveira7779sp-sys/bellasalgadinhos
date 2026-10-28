@@ -89,7 +89,7 @@ const caixa = (bg: string, borda: string, cor: string): React.CSSProperties => (
 });
 
 function Cardapio() {
-  const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu, refetchInterval: 60_000 });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu, refetchInterval: 60_000 });
   const doCreateOrder = useServerFn(createOrder);
   const [enviando, setEnviando] = useState(false);
 
@@ -484,6 +484,11 @@ function Cardapio() {
         <div>
           {isLoading ? (
             <p style={{ padding: 20, color: "#6b7280" }}>Carregando cardápio...</p>
+          ) : null}
+          {isError ? (
+            <p style={{ padding: 20, color: "#6b7280" }}>
+              Não foi possível carregar o cardápio agora. Tente novamente em instantes.
+            </p>
           ) : null}
 
           {grupos.map((c) => (
