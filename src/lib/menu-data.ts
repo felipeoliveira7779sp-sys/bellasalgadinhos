@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export type Size = { label: string; price: number };
 export type ChoiceGroup = { title: string; options: string[] };
@@ -39,7 +39,25 @@ export type Store = {
   surcharge_active: boolean;
   surcharge_amount: number;
   surcharge_label: string;
+  // Abertura: auto = segue o horário; open/closed = forçado pelo painel
+  open_status: OpenStatus;
 };
+
+export type OpenStatus = "auto" | "open" | "closed";
+
+// Horário padrão: Seg-Sáb, 13h às 21h (horário de Brasília)
+export function dentroDoHorario(now = new Date()) {
+  const br = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dia = br.getDay();
+  const t = br.getHours() + br.getMinutes() / 60;
+  return dia >= 1 && dia <= 6 && t >= 13 && t < 21;
+}
+
+export function lojaEstaAberta(status: OpenStatus | undefined, now = new Date()) {
+  if (status === "open") return true;
+  if (status === "closed") return false;
+  return dentroDoHorario(now);
+}
 
 export const money = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -85,6 +103,9 @@ export async function fetchMenu() {
           surcharge_amount: numOuNull(s["surcharge_amount"]) ?? 2,
           surcharge_label:
             (s["surcharge_label"] as string | null) ?? "Dia de chuva, feriado ou alta demanda",
+          open_status: (["auto", "open", "closed"].includes(s["open_status"] as string)
+            ? s["open_status"]
+            : "auto") as OpenStatus,
         } as Store)
       : null,
   };

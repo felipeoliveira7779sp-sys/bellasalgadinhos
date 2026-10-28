@@ -9,8 +9,8 @@ function checkPassword(password: string) {
 }
 
 async function admin() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
+  const { getSupabaseAdmin } = await import("@/lib/supabase-admin.server");
+  return getSupabaseAdmin();
 }
 
 export const loginAdmin = createServerFn({ method: "POST" })
@@ -31,6 +31,7 @@ const storeSchema = z.object({
   address: z.string(),
   store_lat: z.number().nullable(),
   store_lon: z.number().nullable(),
+  open_status: z.enum(["auto", "open", "closed"]),
   surcharge_active: z.boolean(),
   surcharge_amount: z.number().min(0),
   surcharge_label: z.string(),
@@ -163,9 +164,54 @@ export const uploadImage = createServerFn({ method: "POST" })
       .from("menu")
       .upload(path, bytes, { contentType: data.contentType, upsert: true });
     if (error) throw new Error(error.message);
-    const { data: signed, error: signErr } = await db.storage
-      .from("menu")
-      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-    if (signErr || !signed) throw new Error(signErr?.message ?? "Falha ao gerar link da imagem");
-    return { url: signed.signedUrl };
+    // Bucket "menu" é público: devolve a URL pública permanente
+    const { data: pub } = db.storage.from("menu").getPublicUrl(path);
+    return { url: pub.publicUrl };
+  });
+
+// ================= Pedidos =================
+const orderSchema = z.object({
+  customer_name: z.string().trim().min(1).max(120),
+  customer_phone: z.string().trim().min(1).max(40),
+  order_type: z.enum(["entrega", "retirada"]),
+  scheduled_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  scheduled_time: z.string().max(10),
+  payment_method: z.string().max(40),
+  change_for: z.string().max(40).nullable(),
+  cep: z.string().max(10).nullable(),
+  address: z.string().max(400).nullable(),
+  distance_km: z.number().nullable(),
+  distance_estimated: z.boolean(),
+  delivery_fee: z.number().min(0),
+  return_fee_applied: z.boolean(),
+  surcharge: z.number().min(0),
+  subtotal: z.number().min(0),
+  total: z.number().min(0),
+  items: z
+    .array(
+      z.object({
+        name: z.string(),
+        qty: z.number().int().min(1),
+        unitPrice: z.number(),
+        sizeLabel: z.string(),
+        flavors: z.string(),
+        singleFlavor: z.string(),
+        choices: z.string(),
+        obs: z.string(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export const createOrder = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => orderSchema.parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: row, error } = await db.from("orders").insert(data).select("id").single();
+    if (error || !row) {
+      console.error("createOrder", error);
+      throw new Error("Não foi possível registrar o pedido. Tente novamente.");
+    }
+    return { id: row.id as string };
   });
