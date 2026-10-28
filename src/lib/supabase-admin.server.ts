@@ -3,9 +3,9 @@ import { SUPABASE_URL } from "./supabase";
 
 // Cliente com service role (ignora RLS). Só no servidor, depois de checar a senha.
 export function getSupabaseAdmin() {
-  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada no ambiente.");
-  return createClient(process.env["SUPABASE_URL"] || SUPABASE_URL, key, {
+  const key = process.env["BELLA_SERVICE_ROLE_KEY"];
+  if (!key) throw new Error("BELLA_SERVICE_ROLE_KEY não configurada no ambiente.");
+  return createClient(SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
