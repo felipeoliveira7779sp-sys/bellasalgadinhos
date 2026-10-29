@@ -243,7 +243,7 @@ function Cardapio() {
               ...prepared,
               ...(usesFlavorQuantities(prepared, c.title) ? { _qtyModeCategoria: true } : {}),
               ...((packUnitCount(prepared.sizes?.[0]?.label ?? "", prepared.name) > 0 ||
-                /\\b(cento|centena)\\b/.test(normalizarTexto(prepared.name))) && prepared.flavors?.length
+                /\b(cento|centena)\b/.test(normalizarTexto(prepared.name))) && prepared.flavors?.length
                 ? { _packFlavorMode: true }
                 : {}),
               ...(isTwoLiterDrink && drinkOptions.length
@@ -270,7 +270,7 @@ function Cardapio() {
     );
     const ehRefri2L = (p: Product, categoryTitle: string) => {
       const texto = normalizarTexto(`${p.name} ${p.description ?? ""} ${categoryTitle}`);
-      return /\\b2\\s*l\\b|\\b2l\\b|2 litros|dois litros/.test(texto);
+      return /\b2\\s*l\b|\b2l\b|2 litros|dois litros/.test(texto);
     };
     const itensRefri2L = produtosBebida.filter(({ product, categoryTitle }) =>
       ehRefri2L(product, categoryTitle),
