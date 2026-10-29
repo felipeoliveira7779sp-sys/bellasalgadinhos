@@ -196,7 +196,7 @@ function Cardapio() {
     const ehHoje = selecionada.getFullYear() === hoje.getFullYear() && selecionada.getMonth() === hoje.getMonth() && selecionada.getDate() === hoje.getDate();
     const primeiroHorario = ehHoje ? Math.max(inicio, Math.ceil((hoje.getHours() * 60 + hoje.getMinutes() + 30) / 30) * 30) : inicio;
     const lista: string[] = [];
-    for (let minuto = primeiroHorario; minuto < fim; minuto += 30) {
+    for (let minuto = primeiroHorario; minuto <= fim; minuto += 30) {
       lista.push(`${String(Math.floor(minuto / 60)).padStart(2, "0")}:${String(minuto % 60).padStart(2, "0")}`);
     }
     return lista;
@@ -382,7 +382,7 @@ function Cardapio() {
 
   async function sendOrder() {
     if (enviando) return;
-    if (!lojaEstaAberta(store?.open_status)) {
+    if (!lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
       alert("A loja está fechada no momento. Tente novamente no horário de funcionamento.");
       return;
     }
@@ -480,7 +480,7 @@ function Cardapio() {
     window.location.href = `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(txt)}`;
   }
 
-  const aberto = lojaEstaAberta(store?.open_status);
+  const aberto = lojaEstaAberta(store?.open_status, new Date(), store?.hours_text);
   const semPonto = !lojaCoords;
 
   return (
