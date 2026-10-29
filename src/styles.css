@@ -184,6 +184,19 @@
 .saboretal .menu-section { padding: 6px 12px 10px; }
 .saboretal .section-title { font-family: "Fraunces", Georgia, serif; font-size: 1.2rem; font-weight: 800; margin: 10px 4px; }
 .saboretal .product-card { width: 100%; display: flex; gap: 12px; justify-content: space-between; text-align: left; background: var(--bs-card); border: 1px solid var(--bs-line); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; color: inherit; font: inherit; }
+/* Cardápio sempre em uma única coluna, inclusive em notebooks e telas largas. */
+.saboretal .menu-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.saboretal .menu-section > .product-card {
+  width: 100% !important;
+  max-width: 100%;
+  grid-column: 1 / -1;
+  align-self: stretch;
+  flex: 0 0 auto;
+}
 .saboretal .product-info { display: flex; flex-direction: column; flex: 1; }
 .saboretal .product-title { font-weight: 800; font-size: 1rem; }
 .saboretal .product-desc { color: var(--bs-muted); font-size: .82rem; margin: 4px 0 8px; }
