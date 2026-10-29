@@ -227,13 +227,23 @@ function Cardapio() {
         items: [...data.products]
           .map(applyCatalogChoices)
           .filter((p) => p.category_id === c.id)
-          .map((p) => ({
-            ...p,
-            ...(usesFlavorQuantities(p, c.title) ? { _qtyModeCategoria: true } : {}),
-            ...(normalizarTexto(c.title).includes("salgados fritos") && p.flavors?.length
-              ? { _packFlavorMode: true }
-              : {}),
-          }))
+          .map((p) => {
+            const prepared = applyCatalogChoices(p);
+            const productText = normalizarTexto(`${prepared.name} ${prepared.description ?? ""} ${c.title}`);
+            const isTwoLiterDrink = /refrigerante|refri|bebida/.test(productText) &&
+              (/2\\s*l|2 litros|2l/.test(productText) || /refrigerante 2l|refri 2l|2 litros/.test(normalizarTexto(prepared.name)));
+            const drinkOptions = (prepared.choice_groups?.[0] as ChoiceGroup | undefined)?.options ?? [];
+            return {
+              ...prepared,
+              ...(usesFlavorQuantities(prepared, c.title) ? { _qtyModeCategoria: true } : {}),
+              ...(normalizarTexto(c.title).includes("salgados fritos") && prepared.flavors?.length
+                ? { _packFlavorMode: true }
+                : {}),
+              ...(isTwoLiterDrink && drinkOptions.length
+                ? { _qtyModeCategoria: true, flavors: drinkOptions, choice_groups: [] }
+                : {}),
+            };
+          })
           .map((p) => aplicarRegrasCatalogo(p))
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
       }))
