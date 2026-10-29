@@ -3,8 +3,13 @@ import { SUPABASE_URL } from "./supabase";
 
 // Cliente com service role (ignora RLS). Só no servidor, depois de checar a senha.
 export function getSupabaseAdmin() {
-  const key = process.env["BELLA_SERVICE_ROLE_KEY"];
+  const key = process.env["BELLA_SERVICE_ROLE_KEY"]?.trim();
   if (!key) throw new Error("BELLA_SERVICE_ROLE_KEY não configurada no ambiente.");
+  if (key.startsWith("sb_publishable_")) {
+    throw new Error(
+      "BELLA_SERVICE_ROLE_KEY está usando a chave publicável. Configure a chave secreta sb_secret_ do Supabase (ou a chave legada service_role) nos Secrets do Lovable.",
+    );
+  }
   return createClient(SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
