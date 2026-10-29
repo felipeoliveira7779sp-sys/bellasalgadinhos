@@ -45,12 +45,16 @@ export type Store = {
 
 export type OpenStatus = "auto" | "open" | "closed";
 
-// Horário padrão: Seg-Sáb, 13h às 21h (horário de Brasília)
-export function dentroDoHorario(now = new Date()) {
-  const br = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const dia = br.getDay();
-  const t = br.getHours() + br.getMinutes() / 60;
-  return dia >= 1 && dia <= 6 && t >= 13 && t < 21;
+// Horário padrão da loja: Seg-Sáb, 08h às 18h (horário local de Rio Branco).
+export function dentroDoHorario(now = new Date(), hoursText = "Seg-Sáb: 8h-18h") {
+  const local = new Date(now.toLocaleString("en-US", { timeZone: "America/Rio_Branco" }));
+  const dia = local.getDay();
+  const faixa = hoursText.match(/(\d{1,2})(?::(\d{2}))?\s*h?\s*[-–a]\s*(\d{1,2})(?::(\d{2}))?\s*h?/i);
+  if (!faixa || dia < 1 || dia > 6) return false;
+  const inicio = Number(faixa[1]) * 60 + Number(faixa[2] ?? 0);
+  const fim = Number(faixa[3]) * 60 + Number(faixa[4] ?? 0);
+  const minutoAtual = local.getHours() * 60 + local.getMinutes();
+  return fim > inicio && minutoAtual >= inicio && minutoAtual < fim;
 }
 
 export function lojaEstaAberta(status: OpenStatus | undefined, now = new Date()) {
