@@ -271,7 +271,7 @@ function PainelConteudo({ password }: { password: string }) {
         logo_url: null,
         cover_url: null,
         whatsapp: "556892505137",
-        hours_text: "Seg-Sáb: 13h-21h",
+        hours_text: "Seg-Sáb: 8h-18h",
         address: "",
         store_lat: null,
         store_lon: null,
