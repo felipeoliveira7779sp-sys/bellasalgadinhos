@@ -101,6 +101,9 @@ function explicarErro(e: unknown): string {
   if (/column .* does not exist|schema cache|could not find the/i.test(bruto)) {
     return "O banco ainda não tem uma coluna nova. Rode o schema.sql atualizado. Detalhe técnico: " + bruto;
   }
+  if (/ADMIN_PASSWORD.*não está configurada/i.test(bruto)) {
+    return "O painel ainda não está configurado no servidor. É necessário definir ADMIN_PASSWORD nas variáveis de ambiente do projeto e publicar novamente.";
+  }
   if (/senha incorreta/i.test(bruto)) return "Senha incorreta.";
   if (/failed to fetch|networkerror|load failed/i.test(bruto)) {
     return "Sem conexão com o servidor. Confira a internet e tente de novo.";
@@ -190,8 +193,8 @@ function Painel() {
       await login({ data: { password } });
       sessionStorage.setItem("bs_admin_pw", password);
       setAuthed(true);
-    } catch {
-      setErro("Senha incorreta.");
+    } catch (e) {
+      setErro(explicarErro(e));
     }
   }
 
