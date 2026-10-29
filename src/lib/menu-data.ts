@@ -57,10 +57,10 @@ export function dentroDoHorario(now = new Date(), hoursText = "Seg-Sáb: 8h-18h"
   return fim > inicio && minutoAtual >= inicio && minutoAtual < fim;
 }
 
-export function lojaEstaAberta(status: OpenStatus | undefined, now = new Date()) {
+export function lojaEstaAberta(status: OpenStatus | undefined, now = new Date(), hoursText = "Seg-Sáb: 8h-18h") {
   if (status === "open") return true;
   if (status === "closed") return false;
-  return dentroDoHorario(now);
+  return dentroDoHorario(now, hoursText);
 }
 
 export const money = (v: number) =>
