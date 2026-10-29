@@ -111,7 +111,7 @@ export function kitChecklist(product: Product): KitChecklistItem[] {
   const regex = /\b(\d+)\s*(doces?|docinhos?|churros?|salgados?|empadas?|pizzas?|bolos?)\b/gi;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text))) {
-    const word = normalize(match[2]);
+    const word = normalize(match[2] ?? "");
     add(`${match[1]} ${word.startsWith("docinh") ? "doces" : word}`);
   }
   if (/\bbolo\b/i.test(text)) add("Bolo");
