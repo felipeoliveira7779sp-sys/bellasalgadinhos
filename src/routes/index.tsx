@@ -8,7 +8,6 @@ import { createOrder } from "@/lib/menu.functions";
 import { agruparCardapio, precoSalgado, type ProdutoAgrupado } from "@/lib/agrupar-cardapio";
 import {
   LIMITE_KM,
-  TABELA_FRETE,
   buscarCep,
   calcularKmEntrega,
   calcularTaxaEntrega,
@@ -134,7 +133,6 @@ function Cardapio() {
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
   const [calc, setCalc] = useState<CalcFrete>(CALC_VAZIO);
-  const [faixaManual, setFaixaManual] = useState("");
   const calcId = useRef(0);
 
   const store = data?.store ?? null;
@@ -177,12 +175,7 @@ function Cardapio() {
     : 0;
 
   // ----- Frete -----
-  const faixaManualObj = faixaManual !== "" ? TABELA_FRETE[Number(faixaManual)] : undefined;
-  const kmAtual: number | null = faixaManualObj
-    ? faixaManualObj.maxKm
-    : calc.status === "ok"
-      ? calc.km
-      : null;
+  const kmAtual: number | null = calc.status === "ok" ? calc.km : null;
   const frete = tipo === "entrega" && kmAtual !== null ? calcularTaxaEntrega(kmAtual, pagamento) : null;
   const sobretaxa = store?.surcharge_active ? store.surcharge_amount : 0;
   const sobretaxaAplicada = frete ? sobretaxa : 0;
@@ -191,11 +184,23 @@ function Cardapio() {
   const subtotal = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
   const qtdTotal = cart.reduce((a, i) => a + i.qty, 0);
 
-  const horarios: string[] = [];
-  for (let h = 13; h <= 20; h++) {
-    horarios.push(`${String(h).padStart(2, "0")}:00`, `${String(h).padStart(2, "0")}:30`);
-  }
-  horarios.push("21:00");
+  const horarios: string[] = (() => {
+    const faixa = store?.hours_text?.match(/(\d{1,2})(?::(\d{2}))?\s*h?\s*[-–a]\s*(\d{1,2})(?::(\d{2}))?\s*h?/i);
+    if (!faixa) return [];
+    const inicio = Number(faixa[1]) * 60 + Number(faixa[2] ?? 0);
+    const fim = Number(faixa[3]) * 60 + Number(faixa[4] ?? 0);
+    if (fim <= inicio) return [];
+    const hoje = new Date();
+    const [ano, mes, dia] = dataPedido.split("-").map(Number);
+    const selecionada = new Date(ano, mes - 1, dia);
+    const ehHoje = selecionada.getFullYear() === hoje.getFullYear() && selecionada.getMonth() === hoje.getMonth() && selecionada.getDate() === hoje.getDate();
+    const primeiroHorario = ehHoje ? Math.max(inicio, Math.ceil((hoje.getHours() * 60 + hoje.getMinutes() + 30) / 30) * 30) : inicio;
+    const lista: string[] = [];
+    for (let minuto = primeiroHorario; minuto < fim; minuto += 30) {
+      lista.push(`${String(Math.floor(minuto / 60)).padStart(2, "0")}:${String(minuto % 60).padStart(2, "0")}`);
+    }
+    return lista;
+  })();
 
   function openProduct(p: ProdutoAgrupado) {
     if (!p.active) return;
@@ -279,7 +284,6 @@ function Cardapio() {
   function limparCalculo() {
     calcId.current++;
     setCalc(CALC_VAZIO);
-    setFaixaManual("");
     setCoordsCliente(null);
   }
 
@@ -290,7 +294,7 @@ function Cardapio() {
         km: null,
         estimada: false,
         mensagem:
-          "A loja ainda não configurou o ponto de saída das entregas. Escolha a faixa de distância abaixo.",
+          "A loja ainda não configurou o ponto de saída das entregas.",
       });
       return;
     }
@@ -312,7 +316,6 @@ function Cardapio() {
         estimada: false,
         mensagem:
           (e instanceof Error ? e.message : "Não foi possível calcular.") +
-          " Escolha a faixa de distância abaixo.",
       });
     }
   }
@@ -375,7 +378,6 @@ function Cardapio() {
       return;
     }
     const id = ++calcId.current;
-    setFaixaManual("");
     void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente }, id);
   }
 
@@ -416,9 +418,7 @@ function Cardapio() {
     if (tipo === "entrega") {
       txt += `📍 *Endereço:* ${rua}, Nº ${numero}${complemento ? ` - ${complemento}` : ""}\n`;
       txt += `🏘️ *Bairro:* ${bairro} — ${cidade}${uf ? `/${uf}` : ""}${cep ? ` — CEP ${cep}` : ""}\n`;
-      txt += faixaManualObj
-        ? `📏 *Distância:* faixa de ${fmtKm(faixaManualObj.minKm)} a ${fmtKm(faixaManualObj.maxKm)} km (escolhida pelo cliente)\n`
-        : `📏 *Distância:* ~${fmtKm(kmAtual ?? 0)} km${calc.estimada ? " (estimada)" : ""}\n`;
+      txt += `📏 *Distância:* ~${fmtKm(kmAtual ?? 0)} km${calc.estimada ? " (estimada)" : ""}\n`;
     }
     txt += `\n📦 *ITENS:*\n`;
     cart.forEach((i) => {
@@ -460,7 +460,7 @@ function Cardapio() {
               ? `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""} - ${bairro}, ${cidade}${uf ? `/${uf}` : ""}`
               : null,
           distance_km: tipo === "entrega" ? kmAtual : null,
-          distance_estimated: tipo === "entrega" && (calc.estimada || Boolean(faixaManualObj)),
+          distance_estimated: tipo === "entrega" && calc.estimada,
           delivery_fee: tipo === "entrega" && frete ? frete.taxa : 0,
           return_fee_applied: Boolean(tipo === "entrega" && frete?.cobraRetorno),
           surcharge: sobretaxaAplicada,
@@ -483,7 +483,6 @@ function Cardapio() {
 
   const aberto = lojaEstaAberta(store?.open_status);
   const semPonto = !lojaCoords;
-  const mostrarFaixaManual = tipo === "entrega" && (calc.status === "erro" || semPonto);
 
   return (
     <div className="saboretal st-body">
@@ -881,9 +880,10 @@ function Cardapio() {
               <div className="input-group">
                 <input
                   type="date"
+                  min={new Date().toLocaleDateString("en-CA")}
                   className="input-control"
                   value={dataPedido}
-                  onChange={(e) => setDataPedido(e.target.value)}
+                  onChange={(e) => { setDataPedido(e.target.value); setHorario(""); }}
                 />
               </div>
               <div className="input-group">
@@ -1023,9 +1023,7 @@ function Cardapio() {
                   <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
                     <span>
                       📍{" "}
-                      {faixaManualObj
-                        ? `Faixa: ${fmtKm(faixaManualObj.minKm)} a ${fmtKm(faixaManualObj.maxKm)} km`
-                        : `Distância: ~${fmtKm(kmAtual)} km${calc.estimada ? " (estimada)" : ""}`}
+                      { `Distância: ~${fmtKm(kmAtual)} km${calc.estimada ? " (estimada)" : ""}` }
                     </span>
                     <span style={{ color: "#15803d", fontWeight: 800 }}>
                       {frete ? money(frete.taxa) : "—"}
@@ -1065,22 +1063,6 @@ function Cardapio() {
                 <div style={caixa("#fffbeb", "#fcd34d", "#92400e")}>{calc.mensagem}</div>
               ) : null}
 
-              {mostrarFaixaManual ? (
-                <div className="input-group">
-                  <select
-                    className="input-control"
-                    value={faixaManual}
-                    onChange={(e) => setFaixaManual(e.target.value)}
-                  >
-                    <option value="">Escolha a faixa de distância aproximada...</option>
-                    {TABELA_FRETE.map((f, i) => (
-                      <option key={f.maxKm} value={String(i)}>
-                        {i === 0 ? `Até ${fmtKm(f.maxKm)} km` : `${fmtKm(f.minKm)} a ${fmtKm(f.maxKm)} km`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
             </div>
           ) : null}
 
