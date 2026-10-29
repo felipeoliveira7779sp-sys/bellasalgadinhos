@@ -253,7 +253,6 @@ function PainelConteudo({ password }: { password: string }) {
   const [store, setStore] = useState<Store | null>(null);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
   const [newCat, setNewCat] = useState("");
-  const [activeSection, setActiveSection] = useState<"produtos" | "categorias" | "loja" | "entrega">("produtos");
 
   // Localizar a loja no mapa
   const [cepLoja, setCepLoja] = useState("");
@@ -537,31 +536,9 @@ function PainelConteudo({ password }: { password: string }) {
     <div className="saboretal st-body">
       <div className="app-container" style={{ padding: 16, paddingBottom: 60 }}>
         <h1 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: 4 }}>Painel do dono</h1>
-        <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: 12 }}>
-          Gerencie cada parte separadamente, sem misturar produtos e configurações.
+        <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: 16 }}>
+          Ajustes do dia a dia ficam no topo. O resto está nas seções abaixo (toque para abrir).
         </p>
-        <nav aria-label="Seções do painel" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 16 }}>
-          {([
-            ["produtos", "🍽️ Produtos"],
-            ["categorias", "🗂️ Categorias"],
-            ["loja", "🏪 Loja"],
-            ["entrega", "📍 Entrega"],
-          ] as const).map(([section, label]) => (
-            <button
-              key={section}
-              type="button"
-              aria-current={activeSection === section ? "page" : undefined}
-              onClick={() => setActiveSection(section)}
-              style={{
-                ...(activeSection === section ? btn : btnGhost),
-                minHeight: 44,
-                border: activeSection === section ? "2px solid #92400e" : btnGhost.border,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
 
         {msg ? (
           <div
@@ -582,8 +559,6 @@ function PainelConteudo({ password }: { password: string }) {
           </div>
         ) : null}
 
-        {activeSection === "loja" ? (
-          <>
         {/* ---------- Ajustes rápidos ---------- */}
         {store ? (
           <div style={card}>
@@ -653,11 +628,6 @@ function PainelConteudo({ password }: { password: string }) {
           </div>
         ) : null}
 
-          </>
-        ) : null}
-
-        {activeSection === "loja" ? (
-          <>
         {/* ---------- Dados da loja ---------- */}
         {store ? (
           <details style={secao}>
@@ -709,11 +679,6 @@ function PainelConteudo({ password }: { password: string }) {
           </details>
         ) : null}
 
-          </>
-        ) : null}
-
-        {activeSection === "entrega" ? (
-          <>
         {/* ---------- Entrega ---------- */}
         {store ? (
           <details style={secao} open={semPonto}>
@@ -815,11 +780,6 @@ function PainelConteudo({ password }: { password: string }) {
           </details>
         ) : null}
 
-          </>
-        ) : null}
-
-        {activeSection === "categorias" ? (
-          <>
         {/* ---------- Categorias ---------- */}
         <details style={secao}>
           <summary style={secaoTitulo}>🗂️ Categorias ({categories.length})</summary>
@@ -850,11 +810,6 @@ function PainelConteudo({ password }: { password: string }) {
           </div>
         </details>
 
-          </>
-        ) : null}
-
-        {activeSection === "produtos" ? (
-          <>
         {/* ---------- Produtos ---------- */}
         <details style={secao} open>
           <summary style={secaoTitulo}>🍽️ Produtos ({products.length})</summary>
@@ -939,9 +894,6 @@ function PainelConteudo({ password }: { password: string }) {
           Voltar ao cardápio
         </a>
       </div>
-
-          </>
-        ) : null}
 
       {/* ---------- Editor de produto ---------- */}
       <div className={`st-overlay ${editing ? "active" : ""}`} onClick={() => setEditing(null)} />
