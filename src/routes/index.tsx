@@ -329,10 +329,10 @@ function Cardapio() {
     const agrupados = resultado.map((categoria) => {
       const titulo = normalizarTexto(categoria.title);
       const textoCategoria = normalizarTexto(`${categoria.title} ${categoria.items.map((p) => `${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`).join(" ")}`);
-      const ehMeioCento = /meio cento|1\\s*\\/\\s*2 cento|1\\/2 cento|meio-cento/.test(textoCategoria);
+      const ehMeioCento = /meio cento|1\s*\/\s*2 cento|1\/2 cento|meio-cento/.test(textoCategoria);
       const ehCategoriaCento = /cento|centena/.test(titulo) ||
         (/salgad/.test(titulo) && categoria.items.some((p) =>
-          /cento|centena|100 unidades|50 unidades|meio cento|1\\s*\\/\\s*2/.test(
+          /cento|centena|100 unidades|50 unidades|meio cento|1\s*\/\s*2/.test(
             normalizarTexto(`${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`)
           )
         ));
