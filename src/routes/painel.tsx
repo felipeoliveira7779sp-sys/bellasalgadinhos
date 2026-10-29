@@ -262,7 +262,7 @@ function PainelConteudo({ password }: { password: string }) {
   const [achado, setAchado] = useState("");
 
   useEffect(() => {
-    if (data?.store) setStore(data.store);
+    if (data?.store) setStore({ ...data.store, whatsapp: "556892505137" });
     else if (data)
       setStore({
         id: "",
@@ -270,7 +270,7 @@ function PainelConteudo({ password }: { password: string }) {
         description: "Salgadinhos e refrigerantes para a sua festa",
         logo_url: null,
         cover_url: null,
-        whatsapp: "",
+        whatsapp: "556892505137",
         hours_text: "Seg-Sáb: 13h-21h",
         address: "",
         store_lat: null,
