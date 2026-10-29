@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -38,6 +38,9 @@ export const Route = createFileRoute("/painel")({
   component: Painel,
 });
 
+// ---------------------------------------------------------------------
+// Estilos
+// ---------------------------------------------------------------------
 const card: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #e5e7eb",
@@ -45,6 +48,14 @@ const card: React.CSSProperties = {
   padding: 16,
   marginBottom: 16,
 };
+const secao: React.CSSProperties = { ...card, padding: 0, overflow: "hidden" };
+const secaoTitulo: React.CSSProperties = {
+  padding: "14px 16px",
+  fontWeight: 700,
+  fontSize: "1rem",
+  cursor: "pointer",
+};
+const secaoCorpo: React.CSSProperties = { padding: "0 16px 16px" };
 const input: React.CSSProperties = {
   width: "100%",
   border: "1px solid #d1d5db",
@@ -72,7 +83,90 @@ const btnGhost: React.CSSProperties = {
   fontSize: "0.8rem",
 };
 const dica: React.CSSProperties = { fontSize: "0.75rem", color: "#6b7280", marginBottom: 8 };
+const subtitulo: React.CSSProperties = { fontWeight: 700, fontSize: "0.85rem", margin: "14px 0 6px", color: "#374151" };
 
+// ---------------------------------------------------------------------
+// Mensagens de erro em português, com a causa provável
+// ---------------------------------------------------------------------
+function explicarErro(e: unknown): string {
+  const bruto = e instanceof Error ? e.message : String(e ?? "Erro desconhecido");
+  if (/jws|jwt|invalid api key|apikey|service[_ ]role/i.test(bruto)) {
+    return (
+      "A chave de serviço do banco (BELLA_SERVICE_ROLE_KEY) está errada ou vazia, por isso nada grava " +
+      "(categoria, produto, loja, imagem). Troque pela chave \"secret\" do Supabase (Settings > API Keys). " +
+      "Detalhe técnico: " +
+      bruto
+    );
+  }
+  if (/column .* does not exist|schema cache|could not find the/i.test(bruto)) {
+    return "O banco ainda não tem uma coluna nova. Rode o schema.sql atualizado. Detalhe técnico: " + bruto;
+  }
+  if (/senha incorreta/i.test(bruto)) return "Senha incorreta.";
+  if (/failed to fetch|networkerror|load failed/i.test(bruto)) {
+    return "Sem conexão com o servidor. Confira a internet e tente de novo.";
+  }
+  return bruto;
+}
+
+// ---------------------------------------------------------------------
+// Imagem: reduz antes de enviar (fotos de celular são grandes demais)
+// ---------------------------------------------------------------------
+function blobParaBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result ?? "");
+      resolve(s.slice(s.indexOf(",") + 1));
+    };
+    r.onerror = () => reject(new Error("Não consegui ler a imagem."));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function prepararImagem(
+  file: File,
+): Promise<{ base64: string; contentType: string; fileName: string }> {
+  const LIMITE_PX = 1600;
+  const manterPng = file.type === "image/png";
+  try {
+    const bmp = await createImageBitmap(file);
+    const escala = Math.min(1, LIMITE_PX / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * escala));
+    const h = Math.max(1, Math.round(bmp.height * escala));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas indisponível");
+    if (!manterPng) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    const tipo = manterPng ? "image/png" : "image/jpeg";
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, tipo, 0.85));
+    if (!blob) throw new Error("não gerou a imagem");
+    return {
+      base64: await blobParaBase64(blob),
+      contentType: tipo,
+      fileName: file.name.replace(/\.[^.]+$/, "") + (manterPng ? ".png" : ".jpg"),
+    };
+  } catch {
+    if (file.size > 3 * 1024 * 1024) {
+      throw new Error("Não consegui reduzir essa imagem. Use uma foto JPG ou PNG de até 3 MB.");
+    }
+    return {
+      base64: await blobParaBase64(file),
+      contentType: file.type || "image/jpeg",
+      fileName: file.name,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Login
+// ---------------------------------------------------------------------
 function Painel() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -130,6 +224,9 @@ function Painel() {
   return <PainelConteudo password={password} />;
 }
 
+// ---------------------------------------------------------------------
+// Painel
+// ---------------------------------------------------------------------
 function PainelConteudo({ password }: { password: string }) {
   const { data, refetch } = useQuery({ queryKey: ["menu"], queryFn: fetchMenu });
   const doSaveStore = useServerFn(saveStore);
@@ -139,12 +236,12 @@ function PainelConteudo({ password }: { password: string }) {
   const doDeleteProduct = useServerFn(deleteProduct);
   const doUpload = useServerFn(uploadImage);
 
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
   const [newCat, setNewCat] = useState("");
 
-  // Localizar a loja no mapa (ponto de saída das entregas)
+  // Localizar a loja no mapa
   const [cepLoja, setCepLoja] = useState("");
   const [numeroLoja, setNumeroLoja] = useState("");
   const [localizando, setLocalizando] = useState(false);
@@ -171,11 +268,12 @@ function PainelConteudo({ password }: { password: string }) {
       });
   }, [data]);
 
-  function flash(t: string) {
-    setMsg(t);
-    setTimeout(() => setMsg(""), 3500);
+  function flash(texto: string, erro = false) {
+    setMsg({ texto, erro });
+    setTimeout(() => setMsg(null), erro ? 15000 : 3500);
   }
 
+  // ----- Imagem -----
   async function pickImage(onDone: (url: string) => void) {
     const el = document.createElement("input");
     el.type = "file";
@@ -183,28 +281,27 @@ function PainelConteudo({ password }: { password: string }) {
     el.onchange = async () => {
       const file = el.files?.[0];
       if (!file) return;
-      flash("Enviando imagem...");
-      const buf = await file.arrayBuffer();
-      let bin = "";
-      new Uint8Array(buf).forEach((b) => (bin += String.fromCharCode(b)));
+      flash("Preparando e enviando a imagem...");
       try {
+        const img = await prepararImagem(file);
         const res = await doUpload({
           data: {
             password,
-            fileName: file.name,
-            contentType: file.type || "image/jpeg",
-            base64: btoa(bin),
+            fileName: img.fileName,
+            contentType: img.contentType,
+            base64: img.base64,
           },
         });
         onDone(res.url);
-        flash("Imagem enviada!");
+        flash("Imagem enviada! Clique em Salvar para guardar.");
       } catch (e) {
-        flash(e instanceof Error ? e.message : "Erro ao enviar imagem");
+        flash(explicarErro(e), true);
       }
     };
     el.click();
   }
 
+  // ----- Loja -----
   async function salvarLoja(dados: Store | null = store, mostrarMsg = true): Promise<boolean> {
     if (!dados) return false;
     try {
@@ -230,18 +327,17 @@ function PainelConteudo({ password }: { password: string }) {
       refetch();
       return true;
     } catch (e) {
-      flash(e instanceof Error ? e.message : "Erro");
+      flash(explicarErro(e), true);
       return false;
     }
   }
 
-  // Liga/desliga a taxa adicional na hora (já salva)
   async function alternarSobretaxa(ativo: boolean) {
     if (!store) return;
     const novo = { ...store, surcharge_active: ativo };
     setStore(novo);
     const ok = await salvarLoja(novo, false);
-    flash(ok ? (ativo ? "Taxa adicional LIGADA" : "Taxa adicional desligada") : "Não consegui salvar");
+    if (ok) flash(ativo ? "Taxa adicional LIGADA" : "Taxa adicional desligada");
   }
 
   async function mudarAbertura(status: OpenStatus) {
@@ -249,12 +345,12 @@ function PainelConteudo({ password }: { password: string }) {
     const novo = { ...store, open_status: status };
     setStore(novo);
     const ok = await salvarLoja(novo, false);
-    flash(ok ? "Status da loja atualizado" : "Não consegui salvar");
+    if (ok) flash("Status da loja atualizado");
   }
 
   async function localizarLoja() {
     if (limparCep(cepLoja).length !== 8) {
-      flash("Digite o CEP da loja com 8 números.");
+      flash("Digite o CEP da loja com 8 números.", true);
       return;
     }
     setLocalizando(true);
@@ -286,15 +382,55 @@ function PainelConteudo({ password }: { password: string }) {
           : `Achei o endereço (${texto}), mas não o ponto no mapa. Digite a latitude e a longitude abaixo.`,
       );
     } catch (e) {
-      flash(e instanceof Error ? e.message : "Erro ao localizar a loja");
+      flash(explicarErro(e), true);
     } finally {
       setLocalizando(false);
     }
   }
 
+  // ----- Categorias -----
+  async function adicionarCategoria() {
+    const titulo = newCat.trim();
+    if (!titulo) return;
+    try {
+      await doSaveCategory({
+        data: { password, id: null, title: titulo, position: categories.length },
+      });
+      setNewCat("");
+      flash("Categoria criada");
+      refetch();
+    } catch (e) {
+      flash(explicarErro(e), true);
+    }
+  }
+
+  async function renomearCategoria(c: Category, titulo: string) {
+    const novo = titulo.trim();
+    if (!novo || novo === c.title) return;
+    try {
+      await doSaveCategory({ data: { password, id: c.id, title: novo, position: c.position } });
+      flash("Categoria atualizada");
+      refetch();
+    } catch (e) {
+      flash(explicarErro(e), true);
+    }
+  }
+
+  async function removerCategoria(c: Category) {
+    if (!confirm(`Remover a categoria "${c.title}" e seus produtos?`)) return;
+    try {
+      await doDeleteCategory({ data: { password, id: c.id } });
+      flash("Categoria removida");
+      refetch();
+    } catch (e) {
+      flash(explicarErro(e), true);
+    }
+  }
+
+  // ----- Produtos -----
   async function salvarProduto() {
     if (!editing?.name || !editing.category_id) {
-      flash("Informe o nome e a categoria.");
+      flash("Informe o nome e a categoria.", true);
       return;
     }
     try {
@@ -322,26 +458,33 @@ function PainelConteudo({ password }: { password: string }) {
       flash("Produto salvo!");
       refetch();
     } catch (e) {
-      flash(e instanceof Error ? e.message : "Erro");
+      flash(explicarErro(e), true);
+    }
+  }
+
+  async function removerProduto(p: Product) {
+    if (!confirm(`Remover "${p.name}"?`)) return;
+    try {
+      await doDeleteProduct({ data: { password, id: p.id } });
+      flash("Produto removido");
+      refetch();
+    } catch (e) {
+      flash(explicarErro(e), true);
     }
   }
 
   const categories: Category[] = data?.categories ?? [];
   const products: Product[] = data?.products ?? [];
 
-  // Reordena produtos dentro da mesma categoria (troca a posição com o vizinho)
+  // Troca a posição com o vizinho dentro da mesma categoria
   async function moverProduto(categoryId: string, index: number, direction: -1 | 1) {
     const doCategoria = products
       .filter((p) => p.category_id === categoryId)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-    const alvo = index + direction;
     const atual = doCategoria[index];
-    const vizinho = doCategoria[alvo];
+    const vizinho = doCategoria[index + direction];
     if (!atual || !vizinho) return;
-
-    const posAtual = atual.position ?? 0;
-    const posVizinho = vizinho.position ?? 0;
 
     function payload(p: Product, novaPosicao: number) {
       return {
@@ -365,27 +508,31 @@ function PainelConteudo({ password }: { password: string }) {
     }
 
     try {
-      await doSaveProduct({ data: payload(atual, posVizinho) });
-      await doSaveProduct({ data: payload(vizinho, posAtual) });
+      await doSaveProduct({ data: payload(atual, vizinho.position ?? 0) });
+      await doSaveProduct({ data: payload(vizinho, atual.position ?? 0) });
       flash("Ordem atualizada!");
       refetch();
     } catch (e) {
-      flash(e instanceof Error ? e.message : "Erro ao reordenar");
+      flash(explicarErro(e), true);
     }
   }
+
+  const semPonto = store !== null && (store.store_lat === null || store.store_lon === null);
 
   return (
     <div className="saboretal st-body">
       <div className="app-container" style={{ padding: 16, paddingBottom: 60 }}>
         <h1 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: 4 }}>Painel do dono</h1>
         <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: 16 }}>
-          Edite a loja, as categorias e os produtos do cardápio.
+          Ajustes do dia a dia ficam no topo. O resto está nas seções abaixo (toque para abrir).
         </p>
+
         {msg ? (
           <div
             style={{
-              background: "#fffbeb",
-              border: "1px solid #fcd34d",
+              background: msg.erro ? "#fef2f2" : "#fffbeb",
+              border: `1px solid ${msg.erro ? "#fecaca" : "#fcd34d"}`,
+              color: msg.erro ? "#991b1b" : "#92400e",
               borderRadius: 8,
               padding: 10,
               fontSize: "0.85rem",
@@ -395,23 +542,25 @@ function PainelConteudo({ password }: { password: string }) {
               zIndex: 5,
             }}
           >
-            {msg}
+            {msg.texto}
           </div>
         ) : null}
 
-        {/* Abertura da loja */}
+        {/* ---------- Ajustes rápidos ---------- */}
         {store ? (
           <div style={card}>
-            <h2 style={{ fontWeight: 600, marginBottom: 6 }}>Abertura da loja</h2>
+            <h2 style={{ fontWeight: 700, marginBottom: 10 }}>⚡ Ajustes rápidos</h2>
+
+            <p style={{ ...subtitulo, marginTop: 0 }}>Loja</p>
             <p style={dica}>
-              Agora o cardápio mostra:{" "}
+              O cardápio mostra agora:{" "}
               <b>{lojaEstaAberta(store.open_status) ? "ABERTA" : "FECHADA"}</b>
-              {store.open_status === "auto" ? " (seguindo o horário Seg-Sáb 13h-21h)" : " (forçado por você)"}
+              {store.open_status === "auto" ? " (seguindo o horário)" : " (forçado por você)"}
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(
                 [
-                  ["auto", "Automático (horário)"],
+                  ["auto", "Automático"],
                   ["open", "Forçar aberta"],
                   ["closed", "Forçar fechada"],
                 ] as [OpenStatus, string][]
@@ -426,19 +575,10 @@ function PainelConteudo({ password }: { password: string }) {
                 </button>
               ))}
             </div>
-          </div>
-        ) : null}
 
-        {/* Taxa adicional (chuva, feriado, alta demanda) */}
-        {store ? (
-          <div style={{ ...card, borderColor: store.surcharge_active ? "#f59e0b" : "#e5e7eb" }}>
-            <h2 style={{ fontWeight: 600, marginBottom: 6 }}>Taxa adicional de entrega</h2>
-            <p style={dica}>
-              Ligue em dia de chuva, feriado ou alta demanda. Enquanto estiver ligada, o valor é
-              somado na taxa de todas as entregas e o cliente vê o aviso no carrinho.
-            </p>
+            <p style={subtitulo}>Taxa adicional (chuva, feriado, alta demanda)</p>
             <label
-              style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: "pointer" }}
+              style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, cursor: "pointer" }}
             >
               <input
                 type="checkbox"
@@ -447,226 +587,222 @@ function PainelConteudo({ password }: { password: string }) {
                 style={{ width: 22, height: 22, accentColor: "#b45309" }}
               />
               <b style={{ color: store.surcharge_active ? "#b45309" : "#374151" }}>
-                {store.surcharge_active ? "LIGADA — cobrando taxa adicional" : "Desligada"}
+                {store.surcharge_active ? "LIGADA — somando na entrega" : "Desligada"}
               </b>
             </label>
-            <p style={dica}>Valor do adicional (R$)</p>
-            <input
-              key={`amt-${store.surcharge_amount}`}
-              style={input}
-              inputMode="decimal"
-              defaultValue={String(store.surcharge_amount).replace(".", ",")}
-              onBlur={(e) => {
-                const n = parseFloat(e.target.value.replace(",", "."));
-                setStore({ ...store, surcharge_amount: Number.isFinite(n) && n >= 0 ? n : 0 });
-              }}
-            />
-            <p style={dica}>Texto mostrado para o cliente</p>
-            <input
-              style={input}
-              value={store.surcharge_label}
-              onChange={(e) => setStore({ ...store, surcharge_label: e.target.value })}
-            />
-            <button style={btn} onClick={() => void salvarLoja()}>
-              Salvar taxa adicional
-            </button>
-          </div>
-        ) : null}
-
-        {/* Loja */}
-        {store ? (
-          <div style={card}>
-            <h2 style={{ fontWeight: 600, marginBottom: 10 }}>Loja</h2>
-            <input
-              style={input}
-              value={store.name}
-              onChange={(e) => setStore({ ...store, name: e.target.value })}
-              placeholder="Nome da loja"
-            />
-            <input
-              style={input}
-              value={store.description}
-              onChange={(e) => setStore({ ...store, description: e.target.value })}
-              placeholder="Descrição"
-            />
-            <input
-              style={input}
-              value={store.whatsapp}
-              onChange={(e) => setStore({ ...store, whatsapp: e.target.value })}
-              placeholder="WhatsApp com DDI e DDD, só números (ex: 5511999999999)"
-            />
-            <input
-              style={input}
-              value={store.hours_text}
-              onChange={(e) => setStore({ ...store, hours_text: e.target.value })}
-              placeholder="Horário exibido"
-            />
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-              {store.logo_url ? (
-                <img src={store.logo_url} alt="logo" style={{ width: 48, height: 48, borderRadius: 24 }} />
-              ) : null}
-              <button style={btnGhost} onClick={() => pickImage((url) => setStore({ ...store, logo_url: url }))}>
-                Trocar logo
-              </button>
-              {store.cover_url ? (
-                <img src={store.cover_url} alt="capa" style={{ width: 64, height: 40, borderRadius: 6 }} />
-              ) : null}
-              <button style={btnGhost} onClick={() => pickImage((url) => setStore({ ...store, cover_url: url }))}>
-                Trocar capa
-              </button>
-            </div>
-
-            <h3 style={{ fontWeight: 600, margin: "16px 0 6px" }}>📍 Endereço da loja (ponto de saída das entregas)</h3>
-            {store.store_lat === null || store.store_lon === null ? (
-              <div
-                style={{
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  color: "#991b1b",
-                  borderRadius: 8,
-                  padding: 10,
-                  fontSize: "0.8rem",
-                  marginBottom: 8,
-                }}
-              >
-                ⚠️ A loja ainda não foi localizada no mapa. Sem isso o site não consegue calcular a
-                taxa de entrega pelo CEP do cliente.
-              </div>
-            ) : null}
             <div style={{ display: "flex", gap: 8 }}>
               <input
-                style={{ ...input, flex: 2 }}
-                inputMode="numeric"
-                maxLength={9}
-                placeholder="CEP da loja"
-                value={cepLoja}
-                onChange={(e) => setCepLoja(e.target.value)}
-              />
-              <input
+                key={`amt-${store.surcharge_amount}`}
                 style={{ ...input, flex: 1 }}
-                placeholder="Número"
-                value={numeroLoja}
-                onChange={(e) => setNumeroLoja(e.target.value)}
-              />
-            </div>
-            <button style={btnGhost} onClick={() => void localizarLoja()} disabled={localizando}>
-              {localizando ? "Procurando..." : "Localizar loja no mapa"}
-            </button>
-            {achado ? <p style={{ ...dica, marginTop: 8, color: "#374151" }}>{achado}</p> : null}
-            <input
-              style={{ ...input, marginTop: 8 }}
-              value={store.address}
-              onChange={(e) => setStore({ ...store, address: e.target.value })}
-              placeholder="Endereço da loja (texto)"
-            />
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                key={`lat-${store.store_lat ?? "x"}`}
-                style={input}
                 inputMode="decimal"
-                placeholder="Latitude (ex: -22.9525)"
-                defaultValue={store.store_lat ?? ""}
+                placeholder="Valor (R$)"
+                defaultValue={String(store.surcharge_amount).replace(".", ",")}
                 onBlur={(e) => {
-                  const v = e.target.value.trim().replace(",", ".");
-                  const n = v === "" ? null : parseFloat(v);
-                  setStore({ ...store, store_lat: n !== null && Number.isFinite(n) ? n : null });
+                  const n = parseFloat(e.target.value.replace(",", "."));
+                  setStore({ ...store, surcharge_amount: Number.isFinite(n) && n >= 0 ? n : 0 });
                 }}
               />
               <input
-                key={`lon-${store.store_lon ?? "x"}`}
-                style={input}
-                inputMode="decimal"
-                placeholder="Longitude (ex: -46.5419)"
-                defaultValue={store.store_lon ?? ""}
-                onBlur={(e) => {
-                  const v = e.target.value.trim().replace(",", ".");
-                  const n = v === "" ? null : parseFloat(v);
-                  setStore({ ...store, store_lon: n !== null && Number.isFinite(n) ? n : null });
-                }}
+                style={{ ...input, flex: 3 }}
+                placeholder="Texto mostrado ao cliente"
+                value={store.surcharge_label}
+                onChange={(e) => setStore({ ...store, surcharge_label: e.target.value })}
               />
             </div>
-            {store.store_lat !== null && store.store_lon !== null ? (
-              <p style={dica}>
-                <a
-                  href={`https://www.google.com/maps?q=${store.store_lat},${store.store_lon}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "#2563eb", textDecoration: "underline" }}
-                >
-                  Ver esse ponto no Google Maps
-                </a>{" "}
-                — confira se é mesmo a sua loja. Se estiver errado, copie a latitude/longitude certa
-                no Google Maps (botão direito no local) e cole aqui.
-              </p>
-            ) : null}
-
-            <button style={btn} onClick={() => void salvarLoja()}>
-              Salvar loja
+            <button style={btnGhost} onClick={() => void salvarLoja()}>
+              Salvar valor e texto
             </button>
           </div>
         ) : null}
 
-        {/* Categorias */}
-        <div style={card}>
-          <h2 style={{ fontWeight: 600, marginBottom: 10 }}>Categorias</h2>
-          {categories.map((c) => (
-            <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        {/* ---------- Dados da loja ---------- */}
+        {store ? (
+          <details style={secao}>
+            <summary style={secaoTitulo}>🏪 Dados da loja</summary>
+            <div style={secaoCorpo}>
+              <p style={dica}>Nome</p>
+              <input
+                style={input}
+                value={store.name}
+                onChange={(e) => setStore({ ...store, name: e.target.value })}
+              />
+              <p style={dica}>Descrição</p>
+              <input
+                style={input}
+                value={store.description}
+                onChange={(e) => setStore({ ...store, description: e.target.value })}
+              />
+              <p style={dica}>WhatsApp com DDI e DDD, só números (ex: 5511999999999)</p>
+              <input
+                style={input}
+                inputMode="numeric"
+                value={store.whatsapp}
+                onChange={(e) => setStore({ ...store, whatsapp: e.target.value })}
+              />
+              <p style={dica}>Horário exibido no cardápio</p>
+              <input
+                style={input}
+                value={store.hours_text}
+                onChange={(e) => setStore({ ...store, hours_text: e.target.value })}
+              />
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+                {store.logo_url ? (
+                  <img src={store.logo_url} alt="logo" style={{ width: 48, height: 48, borderRadius: 24 }} />
+                ) : null}
+                <button style={btnGhost} onClick={() => void pickImage((url) => setStore({ ...store, logo_url: url }))}>
+                  Trocar logo
+                </button>
+                {store.cover_url ? (
+                  <img src={store.cover_url} alt="capa" style={{ width: 64, height: 40, borderRadius: 6 }} />
+                ) : null}
+                <button style={btnGhost} onClick={() => void pickImage((url) => setStore({ ...store, cover_url: url }))}>
+                  Trocar capa
+                </button>
+              </div>
+              <button style={btn} onClick={() => void salvarLoja()}>
+                Salvar loja
+              </button>
+            </div>
+          </details>
+        ) : null}
+
+        {/* ---------- Entrega ---------- */}
+        {store ? (
+          <details style={secao} open={semPonto}>
+            <summary style={secaoTitulo}>
+              📍 Entrega: endereço da loja {semPonto ? "⚠️ falta localizar" : "✅"}
+            </summary>
+            <div style={secaoCorpo}>
+              {semPonto ? (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#991b1b",
+                    borderRadius: 8,
+                    padding: 10,
+                    fontSize: "0.8rem",
+                    marginBottom: 10,
+                  }}
+                >
+                  A loja ainda não foi localizada no mapa. Sem isso o site não calcula a taxa de entrega
+                  pelo CEP do cliente.
+                </div>
+              ) : null}
+              <p style={dica}>1) Digite o CEP e o número da loja e toque em localizar</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  style={{ ...input, flex: 2 }}
+                  inputMode="numeric"
+                  maxLength={9}
+                  placeholder="CEP da loja"
+                  value={cepLoja}
+                  onChange={(e) => setCepLoja(e.target.value)}
+                />
+                <input
+                  style={{ ...input, flex: 1 }}
+                  placeholder="Número"
+                  value={numeroLoja}
+                  onChange={(e) => setNumeroLoja(e.target.value)}
+                />
+              </div>
+              <button style={btnGhost} onClick={() => void localizarLoja()} disabled={localizando}>
+                {localizando ? "Procurando..." : "Localizar loja no mapa"}
+              </button>
+              {achado ? <p style={{ ...dica, marginTop: 8, color: "#374151" }}>{achado}</p> : null}
+
+              <p style={{ ...dica, marginTop: 10 }}>2) Confira (ou corrija) o endereço e o ponto no mapa</p>
+              <input
+                style={input}
+                value={store.address}
+                onChange={(e) => setStore({ ...store, address: e.target.value })}
+                placeholder="Endereço da loja (texto)"
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  key={`lat-${store.store_lat ?? "x"}`}
+                  style={input}
+                  inputMode="decimal"
+                  placeholder="Latitude (ex: -22.9525)"
+                  defaultValue={store.store_lat ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim().replace(",", ".");
+                    const n = v === "" ? null : parseFloat(v);
+                    setStore({ ...store, store_lat: n !== null && Number.isFinite(n) ? n : null });
+                  }}
+                />
+                <input
+                  key={`lon-${store.store_lon ?? "x"}`}
+                  style={input}
+                  inputMode="decimal"
+                  placeholder="Longitude (ex: -46.5419)"
+                  defaultValue={store.store_lon ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim().replace(",", ".");
+                    const n = v === "" ? null : parseFloat(v);
+                    setStore({ ...store, store_lon: n !== null && Number.isFinite(n) ? n : null });
+                  }}
+                />
+              </div>
+              {store.store_lat !== null && store.store_lon !== null ? (
+                <p style={dica}>
+                  <a
+                    href={`https://www.google.com/maps?q=${store.store_lat},${store.store_lon}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "#2563eb", textDecoration: "underline" }}
+                  >
+                    Ver esse ponto no Google Maps
+                  </a>{" "}
+                  — se não for a sua loja, clique com o botão direito no local certo no Google Maps,
+                  copie a latitude/longitude e cole acima.
+                </p>
+              ) : null}
+
+              <p style={{ ...dica, marginTop: 10 }}>3) Salve</p>
+              <button style={btn} onClick={() => void salvarLoja()}>
+                Salvar loja
+              </button>
+            </div>
+          </details>
+        ) : null}
+
+        {/* ---------- Categorias ---------- */}
+        <details style={secao}>
+          <summary style={secaoTitulo}>🗂️ Categorias ({categories.length})</summary>
+          <div style={secaoCorpo}>
+            {categories.map((c) => (
+              <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <input
+                  style={{ ...input, marginBottom: 0 }}
+                  defaultValue={c.title}
+                  onBlur={(e) => void renomearCategoria(c, e.target.value)}
+                />
+                <button style={btnGhost} onClick={() => void removerCategoria(c)}>
+                  Remover
+                </button>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
               <input
                 style={{ ...input, marginBottom: 0 }}
-                defaultValue={c.title}
-                onBlur={async (e) => {
-                  if (e.target.value !== c.title) {
-                    await doSaveCategory({
-                      data: { password, id: c.id, title: e.target.value, position: c.position },
-                    });
-                    flash("Categoria atualizada");
-                    refetch();
-                  }
-                }}
+                placeholder="Nova categoria"
+                value={newCat}
+                onChange={(e) => setNewCat(e.target.value)}
               />
-              <button
-                style={btnGhost}
-                onClick={async () => {
-                  if (!confirm(`Remover a categoria "${c.title}" e seus produtos?`)) return;
-                  await doDeleteCategory({ data: { password, id: c.id } });
-                  flash("Categoria removida");
-                  refetch();
-                }}
-              >
-                Remover
+              <button style={btn} onClick={() => void adicionarCategoria()}>
+                Adicionar
               </button>
             </div>
-          ))}
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              style={{ ...input, marginBottom: 0 }}
-              placeholder="Nova categoria"
-              value={newCat}
-              onChange={(e) => setNewCat(e.target.value)}
-            />
-            <button
-              style={btn}
-              onClick={async () => {
-                if (!newCat.trim()) return;
-                await doSaveCategory({
-                  data: { password, id: null, title: newCat.trim(), position: categories.length },
-                });
-                setNewCat("");
-                flash("Categoria criada");
-                refetch();
-              }}
-            >
-              Adicionar
-            </button>
           </div>
-        </div>
+        </details>
 
-        {/* Produtos */}
-        <div style={card}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-            <h2 style={{ fontWeight: 600 }}>Produtos</h2>
+        {/* ---------- Produtos ---------- */}
+        <details style={secao} open>
+          <summary style={secaoTitulo}>🍽️ Produtos ({products.length})</summary>
+          <div style={secaoCorpo}>
             <button
-              style={btn}
+              style={{ ...btn, marginBottom: 12 }}
               onClick={() =>
                 setEditing({
                   category_id: categories[0]?.id ?? "",
@@ -681,89 +817,83 @@ function PainelConteudo({ password }: { password: string }) {
                 })
               }
             >
-              Novo produto
+              + Novo produto
             </button>
-          </div>
-          {categories.map((c) => (
-            <div key={c.id} style={{ marginBottom: 12 }}>
-              <p style={{ fontSize: "0.8rem", color: "#b45309", fontWeight: 600 }}>{c.title}</p>
-              {products
-                .filter((p) => p.category_id === c.id)
-                .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-                .map((p, idx, arr) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      padding: "6px 0",
-                      borderBottom: "1px dashed #e5e7eb",
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                      <button
-                        style={{ ...btnGhost, padding: "2px 8px", fontSize: "0.7rem", lineHeight: 1 }}
-                        disabled={idx === 0}
-                        onClick={() => moverProduto(c.id, idx, -1)}
-                        title="Mover para cima"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        style={{ ...btnGhost, padding: "2px 8px", fontSize: "0.7rem", lineHeight: 1 }}
-                        disabled={idx === arr.length - 1}
-                        onClick={() => moverProduto(c.id, idx, 1)}
-                        title="Mover para baixo"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                    {p.image_url ? (
-                      <img src={p.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 6 }} />
-                    ) : null}
-                    <div style={{ flex: 1, fontSize: "0.85rem" }}>
-                      {p.name}{" "}
-                      <span style={{ color: "#15803d" }}>
-                        {money(p.price ?? p.sizes[0]?.price ?? 0)}
-                      </span>
-                      {!p.active ? <span style={{ color: "#ef4444" }}> (oculto)</span> : null}
-                    </div>
-                    <button style={btnGhost} onClick={() => setEditing(p)}>
-                      Editar
-                    </button>
-                    <button
-                      style={btnGhost}
-                      onClick={async () => {
-                        if (!confirm(`Remover "${p.name}"?`)) return;
-                        await doDeleteProduct({ data: { password, id: p.id } });
-                        flash("Produto removido");
-                        refetch();
+            {categories.map((c) => (
+              <div key={c.id} style={{ marginBottom: 14 }}>
+                <p style={{ fontSize: "0.8rem", color: "#b45309", fontWeight: 700 }}>{c.title}</p>
+                {products
+                  .filter((p) => p.category_id === c.id)
+                  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((p, idx, arr) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                        padding: "6px 0",
+                        borderBottom: "1px dashed #e5e7eb",
                       }}
                     >
-                      Remover
-                    </button>
-                  </div>
-                ))}
-            </div>
-          ))}
-        </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <button
+                          style={{ ...btnGhost, padding: "2px 8px", fontSize: "0.7rem", lineHeight: 1 }}
+                          disabled={idx === 0}
+                          onClick={() => void moverProduto(c.id, idx, -1)}
+                          title="Mover para cima"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          style={{ ...btnGhost, padding: "2px 8px", fontSize: "0.7rem", lineHeight: 1 }}
+                          disabled={idx === arr.length - 1}
+                          onClick={() => void moverProduto(c.id, idx, 1)}
+                          title="Mover para baixo"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                      {p.image_url ? (
+                        <img src={p.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 6 }} />
+                      ) : null}
+                      <div style={{ flex: 1, fontSize: "0.85rem" }}>
+                        {p.name}{" "}
+                        <span style={{ color: "#15803d" }}>
+                          {money(p.price ?? p.sizes[0]?.price ?? 0)}
+                        </span>
+                        {!p.active ? <span style={{ color: "#ef4444" }}> (oculto)</span> : null}
+                      </div>
+                      <button style={btnGhost} onClick={() => setEditing(p)}>
+                        Editar
+                      </button>
+                      <button style={btnGhost} onClick={() => void removerProduto(p)}>
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
+        </details>
 
-        <Link to="/" className="owner-link">
+        <a href="/" className="owner-link">
           Voltar ao cardápio
-        </Link>
+        </a>
       </div>
 
-      {/* Editor de produto */}
+      {/* ---------- Editor de produto ---------- */}
       <div className={`st-overlay ${editing ? "active" : ""}`} onClick={() => setEditing(null)} />
       <div className={`bottom-sheet ${editing ? "active" : ""}`}>
         <div className="sheet-handle" />
         <div className="modal-body">
           {editing ? (
             <>
-              <h2 style={{ fontWeight: 600, marginBottom: 10 }}>
+              <h2 style={{ fontWeight: 700, marginBottom: 10 }}>
                 {editing.id ? "Editar produto" : "Novo produto"}
               </h2>
+
+              <p style={dica}>Categoria</p>
               <select
                 style={input}
                 value={editing.category_id ?? ""}
@@ -775,33 +905,38 @@ function PainelConteudo({ password }: { password: string }) {
                   </option>
                 ))}
               </select>
+              <p style={dica}>Nome</p>
               <input
                 style={input}
-                placeholder="Nome"
                 value={editing.name ?? ""}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
               />
+              <p style={dica}>Descrição</p>
               <textarea
                 style={{ ...input, height: 70 }}
-                placeholder="Descrição"
                 value={editing.description ?? ""}
                 onChange={(e) => setEditing({ ...editing, description: e.target.value })}
               />
+              <p style={dica}>Preço (deixe vazio se usar tamanhos)</p>
               <input
                 style={input}
                 type="number"
                 step="0.01"
-                placeholder="Preço (deixe vazio se usar tamanhos)"
                 value={editing.price ?? ""}
                 onChange={(e) =>
                   setEditing({ ...editing, price: e.target.value === "" ? null : Number(e.target.value) })
                 }
               />
+
+              <p style={dica}>Foto</p>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
                 {editing.image_url ? (
                   <img src={editing.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 8 }} />
                 ) : null}
-                <button style={btnGhost} onClick={() => pickImage((url) => setEditing((p) => ({ ...p, image_url: url })))}>
+                <button
+                  style={btnGhost}
+                  onClick={() => void pickImage((url) => setEditing((p) => ({ ...p, image_url: url })))}
+                >
                   Enviar foto
                 </button>
               </div>
@@ -811,116 +946,137 @@ function PainelConteudo({ password }: { password: string }) {
                 value={editing.image_url ?? ""}
                 onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
               />
-              <p style={dica}>Tamanhos (um por linha: Nome | preço)</p>
-              <textarea
-                style={{ ...input, height: 70 }}
-                defaultValue={(editing.sizes ?? []).map((s: Size) => `${s.label} | ${s.price}`).join("\n")}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    sizes: e.target.value
-                      .split("\n")
-                      .filter((l) => l.trim())
-                      .map((l) => {
-                        const [label, price] = l.split("|");
-                        return { label: (label ?? "").trim(), price: Number((price ?? "0").trim()) || 0 };
-                      }),
-                  })
-                }
-              />
-              <p style={dica}>Sabores múltiplos (um por linha)</p>
-              <textarea
-                style={{ ...input, height: 70 }}
-                defaultValue={(editing.flavors ?? []).join("\n")}
-                onChange={(e) =>
-                  setEditing({ ...editing, flavors: e.target.value.split("\n").filter((l) => l.trim()) })
-                }
-              />
-              <p style={dica}>Sabor único (um por linha)</p>
-              <textarea
-                style={{ ...input, height: 70 }}
-                defaultValue={(editing.single_flavors ?? []).join("\n")}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    single_flavors: e.target.value.split("\n").filter((l) => l.trim()),
-                  })
-                }
-              />
-              <p style={dica}>Quantidade de salgados no pacote (ex: 200)</p>
-              <input
-                style={input}
-                type="number"
-                placeholder="Ex: 200"
-                value={editing.units_base ?? ""}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    units_base: e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
-              <p style={dica}>1 sabor a cada quantos salgados? (ex: 25)</p>
-              <input
-                style={input}
-                type="number"
-                min={1}
-                placeholder="Ex: 25"
-                value={editing.units_per_flavor ?? 25}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    units_per_flavor: Math.max(1, Number(e.target.value) || 1),
-                  })
-                }
-              />
-              {editing.units_base ? (
-                <p style={{ fontSize: "0.8rem", color: "#b45309", fontWeight: 600 }}>
-                  O cliente poderá escolher até{" "}
-                  {Math.max(1, Math.floor(editing.units_base / (editing.units_per_flavor || 25)))} sabor(es)
-                </p>
-              ) : (
-                <p style={dica}>Sem quantidade: o cliente pode escolher todos os sabores.</p>
-              )}
-              <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "8px 0" }}>
-                <input
-                  type="checkbox"
-                  checked={editing.allow_assorted ?? false}
-                  onChange={(e) => setEditing({ ...editing, allow_assorted: e.target.checked })}
+
+              <details style={{ marginBottom: 10 }} open={(editing.sizes?.length ?? 0) > 0}>
+                <summary style={{ fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", padding: "6px 0" }}>
+                  Tamanhos (opcional)
+                </summary>
+                <p style={dica}>Um por linha: Nome | preço (ex: 500 g | 39,90)</p>
+                <textarea
+                  style={{ ...input, height: 70 }}
+                  defaultValue={(editing.sizes ?? []).map((s: Size) => `${s.label} | ${s.price}`).join("\n")}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      sizes: e.target.value
+                        .split("\n")
+                        .filter((l) => l.trim())
+                        .map((l) => {
+                          const [label, price] = l.split("|");
+                          return {
+                            label: (label ?? "").trim(),
+                            price: Number((price ?? "0").trim().replace(",", ".")) || 0,
+                          };
+                        }),
+                    })
+                  }
                 />
-                Cliente pode pedir salgados sortidos (sem escolher sabores)
-              </label>
-              <p style={dica}>
-                Escolhas do combo/kit (uma por linha, formato "Título: opção 1, opção 2")
-                <br />
-                Ex: Refrigerante: Coca-Cola, Guaraná, Fanta
-              </p>
-              <textarea
-                style={{ ...input, height: 70 }}
-                defaultValue={(editing.choice_groups ?? [])
-                  .map((g) => `${g.title}: ${g.options.join(", ")}`)
-                  .join("\n")}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    choice_groups: e.target.value
-                      .split("\n")
-                      .filter((l) => l.includes(":"))
-                      .map((l) => {
-                        const i = l.indexOf(":");
-                        return {
-                          title: l.slice(0, i).trim(),
-                          options: l
-                            .slice(i + 1)
-                            .split(",")
-                            .map((o) => o.trim())
-                            .filter(Boolean),
-                        };
-                      })
-                      .filter((g) => g.title && g.options.length > 0),
-                  })
+              </details>
+
+              <details
+                style={{ marginBottom: 10 }}
+                open={
+                  (editing.flavors?.length ?? 0) > 0 ||
+                  (editing.single_flavors?.length ?? 0) > 0 ||
+                  (editing.choice_groups?.length ?? 0) > 0
                 }
-              />
+              >
+                <summary style={{ fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", padding: "6px 0" }}>
+                  Sabores e escolhas (opcional)
+                </summary>
+                <p style={dica}>Sabores múltiplos (um por linha)</p>
+                <textarea
+                  style={{ ...input, height: 70 }}
+                  defaultValue={(editing.flavors ?? []).join("\n")}
+                  onChange={(e) =>
+                    setEditing({ ...editing, flavors: e.target.value.split("\n").filter((l) => l.trim()) })
+                  }
+                />
+                <p style={dica}>Sabor único (um por linha)</p>
+                <textarea
+                  style={{ ...input, height: 70 }}
+                  defaultValue={(editing.single_flavors ?? []).join("\n")}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      single_flavors: e.target.value.split("\n").filter((l) => l.trim()),
+                    })
+                  }
+                />
+                <p style={dica}>Quantidade de salgados no pacote (ex: 200)</p>
+                <input
+                  style={input}
+                  type="number"
+                  value={editing.units_base ?? ""}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      units_base: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+                <p style={dica}>1 sabor a cada quantos salgados? (ex: 25)</p>
+                <input
+                  style={input}
+                  type="number"
+                  min={1}
+                  value={editing.units_per_flavor ?? 25}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      units_per_flavor: Math.max(1, Number(e.target.value) || 1),
+                    })
+                  }
+                />
+                {editing.units_base ? (
+                  <p style={{ fontSize: "0.8rem", color: "#b45309", fontWeight: 600 }}>
+                    O cliente poderá escolher até{" "}
+                    {Math.max(1, Math.floor(editing.units_base / (editing.units_per_flavor || 25)))} sabor(es)
+                  </p>
+                ) : (
+                  <p style={dica}>Sem quantidade: o cliente pode escolher todos os sabores.</p>
+                )}
+                <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "8px 0" }}>
+                  <input
+                    type="checkbox"
+                    checked={editing.allow_assorted ?? false}
+                    onChange={(e) => setEditing({ ...editing, allow_assorted: e.target.checked })}
+                  />
+                  Cliente pode pedir sortidos (sem escolher sabores)
+                </label>
+                <p style={dica}>
+                  Escolhas obrigatórias (uma por linha, formato "Título: opção 1, opção 2")
+                  <br />
+                  Ex: Refrigerante: Coca-Cola, Guaraná, Fanta
+                </p>
+                <textarea
+                  style={{ ...input, height: 70 }}
+                  defaultValue={(editing.choice_groups ?? [])
+                    .map((g) => `${g.title}: ${g.options.join(", ")}`)
+                    .join("\n")}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      choice_groups: e.target.value
+                        .split("\n")
+                        .filter((l) => l.includes(":"))
+                        .map((l) => {
+                          const i = l.indexOf(":");
+                          return {
+                            title: l.slice(0, i).trim(),
+                            options: l
+                              .slice(i + 1)
+                              .split(",")
+                              .map((o) => o.trim())
+                              .filter(Boolean),
+                          };
+                        })
+                        .filter((g) => g.title && g.options.length > 0),
+                    })
+                  }
+                />
+              </details>
+
               <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
                 <input
                   type="checkbox"
@@ -930,7 +1086,7 @@ function PainelConteudo({ password }: { password: string }) {
                 Mostrar no cardápio
               </label>
               <div style={{ display: "flex", gap: 8, paddingBottom: 20 }}>
-                <button style={btn} onClick={salvarProduto}>
+                <button style={btn} onClick={() => void salvarProduto()}>
                   Salvar
                 </button>
                 <button style={btnGhost} onClick={() => setEditing(null)}>
