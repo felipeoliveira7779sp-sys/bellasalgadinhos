@@ -67,6 +67,12 @@ function basePrice(p: Product) {
   return p.price ?? (p.sizes[0]?.price ?? 0);
 }
 
+function packUnitCount(label: string, fallbackName = ""): number {
+  const text = normalizarTexto(`${label} ${fallbackName}`);
+  const match = text.match(/\b(15|25|50|100|200|300)\b/);
+  return match ? Number(match[1]) : 0;
+}
+
 function getChoiceGroups(p: Product): ChoiceGroup[] {
   if (p.choice_groups && Array.isArray(p.choice_groups) && p.choice_groups.length > 0) {
     return p.choice_groups as ChoiceGroup[];
@@ -224,6 +230,9 @@ function Cardapio() {
           .map((p) => ({
             ...p,
             ...(usesFlavorQuantities(p, c.title) ? { _qtyModeCategoria: true } : {}),
+            ...(normalizarTexto(c.title).includes("salgados fritos") && p.flavors?.length
+              ? { _packFlavorMode: true }
+              : {}),
           }))
           .map((p) => aplicarRegrasCatalogo(p))
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
@@ -285,6 +294,8 @@ function Cardapio() {
       ))
     : 0;
   const isQtyMode = open ? Boolean((open as Product & { _qtyModeCategoria?: boolean })._qtyModeCategoria) : false;
+  const isPackFlavorMode = open ? Boolean((open as Product & { _packFlavorMode?: boolean })._packFlavorMode) : false;
+  const packTarget = open ? packUnitCount(open.sizes[sizeIdx]?.label ?? "", open.name) : 0;
   const listaSaboresQty = open ? (open.flavors?.length ? open.flavors : open.single_flavors ?? []) : [];
   const totalFlavorQty = Object.values(flavorQtys).reduce((a, b) => a + b, 0);
 
@@ -345,7 +356,16 @@ function Cardapio() {
   function addToCart() {
     if (!open) return;
 
-    if (isQtyMode) {
+    if (isPackFlavorMode) {
+      if (packTarget > 0 && totalFlavorQty !== packTarget) {
+        alert(`Distribua exatamente ${packTarget} unidades entre os sabores. Você selecionou ${totalFlavorQty}.`);
+        return;
+      }
+      if (totalFlavorQty === 0) {
+        alert("Escolha a quantidade de cada sabor para continuar.");
+        return;
+      }
+    } else if (isQtyMode) {
       if (totalFlavorQty === 0) {
         alert("Por favor, escolha a quantidade de pelo menos 1 sabor.");
         return;
@@ -365,7 +385,7 @@ function Cardapio() {
       return;
     }
 
-    const faltando = isQtyMode ? undefined : effectiveChoiceGroups.find((g) => !choices[g.title]);
+    const faltando = (isQtyMode || isPackFlavorMode) ? undefined : effectiveChoiceGroups.find((g) => !choices[g.title]);
     if (faltando) {
       alert(`Por favor, selecione uma opção para: "${faltando.title}"`);
       return;
@@ -379,7 +399,7 @@ function Cardapio() {
       }
     }
 
-    const flavorsValue = isQtyMode
+    const flavorsValue = (isQtyMode || isPackFlavorMode)
       ? Object.entries(flavorQtys).filter(([, value]) => value > 0).map(([flavor, value]) => `${value}x ${flavor}`)
       : open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [];
 
@@ -388,12 +408,12 @@ function Cardapio() {
       {
         key: Date.now(),
         name: open.name,
-        qty: isQtyMode ? totalFlavorQty : qty,
+        qty: isPackFlavorMode ? 1 : isQtyMode ? totalFlavorQty : qty,
         unitPrice,
         sizeLabel: open.sizes[sizeIdx]?.label ?? "",
         flavors: flavorsValue,
         singleFlavor: !isQtyMode && open.single_flavors.length > 0 ? single : "",
-        choices: isQtyMode ? {} : Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title]])),
+        choices: (isQtyMode || isPackFlavorMode) ? {} : Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title]])),
         checklist: effectiveKitChecklist.map((item) => `✓ ${item.title}`),
         obs,
       },
@@ -761,7 +781,7 @@ function Cardapio() {
               <p className="modal-desc" style={{ whiteSpace: "pre-line" }}>
                 {open.description}
               </p>
-              <p className="modal-price">{money(isQtyMode ? unitPrice * totalFlavorQty : unitPrice)}</p>
+              <p className="modal-price">{money(isQtyMode && !isPackFlavorMode ? unitPrice * totalFlavorQty : unitPrice)}</p>
 
               {open.sizes.length > 0 ? (
                 <div className="size-selector">
@@ -772,6 +792,7 @@ function Cardapio() {
                       onClick={() => {
                         setSizeIdx(i);
                         setFlavors([]);
+                        setFlavorQtys({});
                         setSortido(false);
                       }}
                     >
@@ -782,9 +803,13 @@ function Cardapio() {
                 </div>
               ) : null}
 
-              {isQtyMode ? (
+              {(isQtyMode || isPackFlavorMode) ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
-                  <b style={{ fontSize: "0.9rem" }}>Sabores — escolha a quantidade de cada um</b>
+                  <b style={{ fontSize: "0.9rem" }}>
+                    {isPackFlavorMode
+                      ? `Distribua as ${packTarget || "unidades do pacote"} entre os sabores`
+                      : "Sabores — escolha a quantidade de cada um"}
+                  </b>
                   <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
                     {listaSaboresQty.map((flavor) => (
                       <div key={flavor} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -797,7 +822,11 @@ function Cardapio() {
                       </div>
                     ))}
                   </div>
-                  <div style={{ marginTop: 10, fontSize: "0.8rem", color: "#15803d", fontWeight: 700 }}>Total: {totalFlavorQty} unidade(s)</div>
+                  <div style={{ marginTop: 10, fontSize: "0.8rem", color: isPackFlavorMode && packTarget > 0 && totalFlavorQty !== packTarget ? "#b91c1c" : "#15803d", fontWeight: 700 }}>
+                    {isPackFlavorMode && packTarget > 0
+                      ? `Total: ${totalFlavorQty} de ${packTarget} unidades`
+                      : `Total: ${totalFlavorQty} unidade(s)`}
+                  </div>
                 </div>
               ) : null}
 
