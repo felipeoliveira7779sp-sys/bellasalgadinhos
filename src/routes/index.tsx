@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
 import { createOrder } from "@/lib/menu.functions";
+import { agruparCardapio, precoSalgado, type ProdutoAgrupado } from "@/lib/agrupar-cardapio";
 import {
   LIMITE_KM,
   TABELA_FRETE,
@@ -98,10 +99,11 @@ function Cardapio() {
   const [enviando, setEnviando] = useState(false);
 
   // Produto aberto
-  const [open, setOpen] = useState<Product | null>(null);
+  const [open, setOpen] = useState<ProdutoAgrupado | null>(null);
   const [sizeIdx, setSizeIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [flavors, setFlavors] = useState<string[]>([]);
+  const [refriQtys, setRefriQtys] = useState<Record<string, number>>({});
   const [single, setSingle] = useState("");
   const [obs, setObs] = useState("");
   const [sortido, setSortido] = useState(false);
@@ -143,33 +145,35 @@ function Cardapio() {
       ? { lat: store.store_lat, lon: store.store_lon }
       : null;
 
-  // Categorias e produtos exatamente como estão cadastrados no painel
+  // Salgadinhos e refrigerantes agrupados em um único card cada
   const grupos = useMemo(() => {
     if (!data) return [];
-    return [...data.categories]
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-      .map((c) => ({
-        ...c,
-        items: [...data.products]
-          .filter((p) => p.category_id === c.id) // não descarta p.active:false
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-      }))
-      .filter((c) => c.items.length > 0);
+    return agruparCardapio(data.categories, data.products);
   }, [data]);
 
+  const isRefri = open?._modo === "refri";
+  const isSalgados = open?._modo === "salgados";
+  const refriPrecos = open?._refriPrecos ?? {};
+  const totalRefri = Object.entries(refriQtys).reduce((a, [f, q]) => a + (refriPrecos[f] ?? 0) * q, 0);
+  const tamanhoAtual = open?.sizes[sizeIdx]?.label ?? "";
+
   const unitPrice = open
-    ? open.sizes.length > 0
-      ? (open.sizes[sizeIdx]?.price ?? 0)
-      : (open.price ?? 0)
+    ? isSalgados
+      ? precoSalgado(open, tamanhoAtual, flavors, sortido)
+      : open.sizes.length > 0
+        ? (open.sizes[sizeIdx]?.price ?? 0)
+        : (open.price ?? 0)
     : 0;
 
   const maxSabores = open
-    ? Math.min(
-        open.flavors.length,
-        open.units_base
-          ? Math.max(1, Math.floor((open.units_base * qty) / (open.units_per_flavor || 25)))
-          : open.flavors.length,
-      )
+    ? isSalgados
+      ? Math.min(open.flavors.length, (open._maxSabores?.[tamanhoAtual] ?? 4) * qty)
+      : Math.min(
+          open.flavors.length,
+          open.units_base
+            ? Math.max(1, Math.floor((open.units_base * qty) / (open.units_per_flavor || 25)))
+            : open.flavors.length,
+        )
     : 0;
 
   // ----- Frete -----
@@ -193,12 +197,13 @@ function Cardapio() {
   }
   horarios.push("21:00");
 
-  function openProduct(p: Product) {
+  function openProduct(p: ProdutoAgrupado) {
     if (!p.active) return;
     setOpen(p);
     setSizeIdx(0);
     setQty(1);
     setFlavors([]);
+    setRefriQtys({});
     setSingle(p.single_flavors[0] ?? "");
     setObs("");
     setSortido(false);
@@ -218,6 +223,31 @@ function Cardapio() {
 
   function addToCart() {
     if (!open) return;
+    if (isRefri) {
+      const escolhidos = Object.entries(refriQtys).filter(([, q]) => q > 0);
+      if (escolhidos.length === 0) {
+        alert("Escolha a quantidade de pelo menos 1 refrigerante.");
+        return;
+      }
+      const agora = Date.now();
+      setCart((c) => [
+        ...c,
+        ...escolhidos.map(([f, q], i) => ({
+          key: agora + i,
+          name: f,
+          qty: q,
+          unitPrice: refriPrecos[f] ?? 0,
+          sizeLabel: "",
+          flavors: [],
+          singleFlavor: "",
+          choices: {},
+          checklist: [],
+          obs,
+        })),
+      ]);
+      setOpen(null);
+      return;
+    }
     if (open.flavors.length > 0 && !sortido && flavors.length === 0) {
       alert("Por favor, marque pelo menos 1 sabor (ou escolha Sortidos).");
       return;
@@ -231,10 +261,10 @@ function Cardapio() {
       ...c,
       {
         key: Date.now(),
-        name: open.name,
+        name: isSalgados ? `Salgadinhos - ${tamanhoAtual}` : open.name,
         qty,
         unitPrice,
-        sizeLabel: open.sizes[sizeIdx]?.label ?? "",
+        sizeLabel: isSalgados ? "" : (open.sizes[sizeIdx]?.label ?? ""),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
         singleFlavor: open.single_flavors.length > 0 ? single : "",
         choices: Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title] ?? ""])),
@@ -537,7 +567,7 @@ function Cardapio() {
                     <h3 className="product-title">{p.name}</h3>
                     <p className="product-desc">{p.description}</p>
                     <span className="product-price">
-                      {p.sizes.length > 0 ? "A partir de " : ""}
+                      {p.sizes.length > 0 || p._modo ? "A partir de " : ""}
                       {money(basePrice(p))}
                     </span>
                   </div>
@@ -606,7 +636,7 @@ function Cardapio() {
               <p className="modal-desc" style={{ whiteSpace: "pre-line" }}>
                 {open.description}
               </p>
-              <p className="modal-price">{money(unitPrice)}</p>
+              <p className="modal-price">{money(isRefri ? totalRefri : unitPrice)}</p>
 
               {open.sizes.length > 0 ? (
                 <div className="size-selector">
@@ -614,7 +644,10 @@ function Cardapio() {
                     <button
                       key={s.label}
                       className={`size-option ${i === sizeIdx ? "selected" : ""}`}
-                      onClick={() => setSizeIdx(i)}
+                      onClick={() => {
+                        setSizeIdx(i);
+                        setFlavors([]);
+                      }}
                     >
                       <div className="size-option-label">{s.label}</div>
                       <div className="size-option-price">{money(s.price)}</div>
@@ -623,7 +656,7 @@ function Cardapio() {
                 </div>
               ) : null}
 
-              {open.flavors.length > 0 && open.allow_assorted ? (
+              {open.flavors.length > 0 && open.allow_assorted && !isRefri ? (
                 <div className="delivery-options" style={{ marginBottom: 12 }}>
                   <button
                     className={`delivery-option ${!sortido ? "selected" : ""}`}
@@ -640,7 +673,43 @@ function Cardapio() {
                 </div>
               ) : null}
 
-              {open.flavors.length > 0 && !sortido ? (
+              {isRefri ? (
+                <div className="obs-box" style={{ marginBottom: 12 }}>
+                  <b style={{ fontSize: "0.9rem" }}>Escolha a quantidade de cada um</b>
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    {open.flavors.map((f) => (
+                      <div
+                        key={f}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+                      >
+                        <span style={{ fontSize: "0.9rem" }}>
+                          {f}
+                          <span style={{ display: "block", fontSize: "0.75rem", color: "#6b7280" }}>
+                            {money(refriPrecos[f] ?? 0)}
+                          </span>
+                        </span>
+                        <div className="qty-controls">
+                          <button
+                            className="qty-btn"
+                            onClick={() => setRefriQtys((c) => ({ ...c, [f]: Math.max(0, (c[f] ?? 0) - 1) }))}
+                          >
+                            -
+                          </button>
+                          <span className="qty-value">{refriQtys[f] ?? 0}</span>
+                          <button
+                            className="qty-btn"
+                            onClick={() => setRefriQtys((c) => ({ ...c, [f]: (c[f] ?? 0) + 1 }))}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {open.flavors.length > 0 && !sortido && !isRefri ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
                   <b style={{ fontSize: "0.9rem" }}>Sabores (escolha até {maxSabores})</b>
                   <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
@@ -721,18 +790,20 @@ function Cardapio() {
               </div>
             </div>
             <div className="modal-footer">
-              <div className="qty-controls">
-                <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}>
-                  -
-                </button>
-                <span className="qty-value">{qty}</span>
-                <button className="qty-btn" onClick={() => setQty((q) => q + 1)}>
-                  +
-                </button>
-              </div>
+              {!isRefri ? (
+                <div className="qty-controls">
+                  <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}>
+                    -
+                  </button>
+                  <span className="qty-value">{qty}</span>
+                  <button className="qty-btn" onClick={() => setQty((q) => q + 1)}>
+                    +
+                  </button>
+                </div>
+              ) : null}
               <button className="btn-add" onClick={addToCart}>
                 <span>Adicionar</span>
-                <span>{money(unitPrice * qty)}</span>
+                <span>{money(isRefri ? totalRefri : unitPrice * qty)}</span>
               </button>
             </div>
           </>
