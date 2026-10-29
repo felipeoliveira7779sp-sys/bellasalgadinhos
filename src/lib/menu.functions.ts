@@ -3,7 +3,12 @@ import { z } from "zod";
 
 function checkPassword(password: string) {
   const expected = process.env["ADMIN_PASSWORD"];
-  if (!expected || password !== expected) {
+  if (!expected) {
+    throw new Error(
+      "Configuração do painel incompleta: ADMIN_PASSWORD não está configurada no servidor.",
+    );
+  }
+  if (password !== expected) {
     throw new Error("Senha incorreta");
   }
 }
