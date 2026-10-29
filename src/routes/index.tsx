@@ -314,8 +314,7 @@ function Cardapio() {
         status: "erro",
         km: null,
         estimada: false,
-        mensagem:
-          (e instanceof Error ? e.message : "Não foi possível calcular.") +
+        mensagem: e instanceof Error ? e.message : "Não foi possível calcular.",
       });
     }
   }
