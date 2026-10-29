@@ -90,6 +90,16 @@ const subtitulo: React.CSSProperties = { fontWeight: 700, fontSize: "0.85rem", m
 // ---------------------------------------------------------------------
 function explicarErro(e: unknown): string {
   const bruto = e instanceof Error ? e.message : String(e ?? "Erro desconhecido");
+  if (/row-level security|violates row level security|rls policy/i.test(bruto)) {
+    return (
+      "O Supabase está recusando o envio da imagem porque o servidor não está usando uma chave administrativa válida. " +
+      "Confira BELLA_SERVICE_ROLE_KEY nas variáveis de ambiente do projeto Lovable: use a chave secreta/ service_role do projeto Supabase, nunca a chave publicável. " +
+      "Depois, publique novamente o site. Não desative a proteção RLS do banco."
+    );
+  }
+  if (/BELLA_SERVICE_ROLE_KEY não configurada/i.test(bruto)) {
+    return "Falta configurar BELLA_SERVICE_ROLE_KEY no ambiente do servidor do projeto Lovable com a chave secreta do Supabase. Depois, publique novamente o site.";
+  }
   if (/jws|jwt|invalid api key|apikey|service[_ ]role/i.test(bruto)) {
     return (
       "A chave de serviço do banco (BELLA_SERVICE_ROLE_KEY) está errada ou vazia, por isso nada grava " +
