@@ -13,7 +13,7 @@ export type FaixaFrete = { minKm: number; maxKm: number; base: number; retorno: 
 // CONFIRMAR com a dona: na faixa "até 1 km" o valor de retorno está 10,50
 // (igual ao da faixa seguinte). Nas demais faixas retorno = base x 1,5.
 export const TABELA_FRETE: FaixaFrete[] = [
-  { minKm: 0, maxKm: 1, base: 6.0, retorno: 9.0 },
+  { minKm: 0, maxKm: 1, base: 6.0, retorno: 7.8 },
   { minKm: 1, maxKm: 2, base: 7.0, retorno: 10.5 },
   { minKm: 2, maxKm: 3.5, base: 8.0, retorno: 12.0 },
   { minKm: 3.5, maxKm: 5.5, base: 10.0, retorno: 15.0 },
