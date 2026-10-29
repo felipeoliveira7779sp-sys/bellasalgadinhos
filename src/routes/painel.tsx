@@ -253,6 +253,7 @@ function PainelConteudo({ password }: { password: string }) {
   const [store, setStore] = useState<Store | null>(null);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
   const [newCat, setNewCat] = useState("");
+  const [filtroCategoriaProduto, setFiltroCategoriaProduto] = useState("todas");
 
   // Localizar a loja no mapa
   const [cepLoja, setCepLoja] = useState("");
@@ -811,9 +812,37 @@ function PainelConteudo({ password }: { password: string }) {
         </details>
 
         {/* ---------- Produtos ---------- */}
-        <details style={secao} open>
-          <summary style={secaoTitulo}>🍽️ Produtos ({products.length})</summary>
+        <section style={{ ...secao, overflow: "hidden" }}>
+          <div style={{ ...secaoTitulo, cursor: "default" }}>🍽️ Produtos <span style={{ color: "#6b7280", fontWeight: 500 }}>({products.length})</span></div>
           <div style={secaoCorpo}>
+            <p style={{ ...dica, marginTop: 0 }}>Escolha uma categoria para ver e editar somente os produtos dela.</p>
+            <div role="tablist" aria-label="Filtrar produtos por categoria" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, marginBottom: 12 }}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filtroCategoriaProduto === "todas"}
+                onClick={() => setFiltroCategoriaProduto("todas")}
+                style={{ ...(filtroCategoriaProduto === "todas" ? btn : btnGhost), whiteSpace: "nowrap", minHeight: 40 }}
+              >
+                Todos ({products.length})
+              </button>
+              {categories.map((c) => {
+                const quantidade = products.filter((p) => p.category_id === c.id).length;
+                const ativa = filtroCategoriaProduto === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={ativa}
+                    onClick={() => setFiltroCategoriaProduto(c.id)}
+                    style={{ ...(ativa ? btn : btnGhost), whiteSpace: "nowrap", minHeight: 40 }}
+                  >
+                    {c.title} ({quantidade})
+                  </button>
+                );
+              })}
+            </div>
             <button
               style={{ ...btn, marginBottom: 12 }}
               onClick={() =>
@@ -832,9 +861,9 @@ function PainelConteudo({ password }: { password: string }) {
             >
               + Novo produto
             </button>
-            {categories.map((c) => (
-              <div key={c.id} style={{ marginBottom: 14 }}>
-                <p style={{ fontSize: "0.8rem", color: "#b45309", fontWeight: 700 }}>{c.title}</p>
+            {(filtroCategoriaProduto === "todas" ? categories : categories.filter((c) => c.id === filtroCategoriaProduto)).map((c) => (
+              <div key={c.id} style={{ marginBottom: 18 }}>
+                {filtroCategoriaProduto === "todas" ? <p style={{ fontSize: "0.85rem", color: "#92400e", fontWeight: 700, marginBottom: 8 }}>{c.title}</p> : null}
                 {products
                   .filter((p) => p.category_id === c.id)
                   .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -888,7 +917,7 @@ function PainelConteudo({ password }: { password: string }) {
               </div>
             ))}
           </div>
-        </details>
+        </section>
 
         <a href="/" className="owner-link">
           Voltar ao cardápio
