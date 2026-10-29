@@ -230,9 +230,15 @@ function Cardapio() {
           .map((p) => {
             const prepared = applyCatalogChoices(p);
             const productText = normalizarTexto(`${prepared.name} ${prepared.description ?? ""} ${c.title}`);
-            const isTwoLiterDrink = /refrigerante|refri|bebida/.test(productText) &&
-              (/2\s*l|2 litros|2l/.test(productText) || /refrigerante 2l|refri 2l|2 litros/.test(normalizarTexto(prepared.name)));
-            const drinkOptions = (prepared.choice_groups?.[0] as ChoiceGroup | undefined)?.options ?? [];
+            const isStandaloneDrink = !/\b(combo|kit)\b/.test(normalizarTexto(prepared.name)) &&
+              /bebida|refrigerante|refri|guarana|coca|kuat|sukita|fanta|sprite|suco/.test(productText);
+            const isTwoLiterDrink = isStandaloneDrink &&
+              /2\s*l|2 litros|2l|dois litros/.test(productText);
+            const drinkOptions = (prepared.choice_groups?.[0] as ChoiceGroup | undefined)?.options ??
+              (isTwoLiterDrink ? [
+                "Coca Original", "Coca Zero", "Guaraná Antarctica", "Kuat",
+                "Sukita Laranja", "Sukita Uva", "Fanta Laranja", "Fanta Uva",
+              ] : []);
             return {
               ...prepared,
               ...(usesFlavorQuantities(prepared, c.title) ? { _qtyModeCategoria: true } : {}),
