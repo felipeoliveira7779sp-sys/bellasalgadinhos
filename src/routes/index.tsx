@@ -323,32 +323,45 @@ function Cardapio() {
       });
     }
 
-    // Cada aba de salgadinhos vira um configurador único quando os itens
-    // representam sabores do mesmo pacote; não deixa cada sabor solto no menu.
+    // Agrupa os sabores de salgadinhos em um único card configurável por categoria.
+    // A categoria (cento ou meio-cento) é a fonte principal; não dependemos de
+    // cada cadastro ter descrição/tamanho escrito exatamente do mesmo jeito.
     const agrupados = resultado.map((categoria) => {
       const titulo = normalizarTexto(categoria.title);
-      const ehSalgadinho = /salgad|frito/.test(titulo) &&
-        !/congelado|lanche|avulso/.test(titulo);
-      if (!ehSalgadinho || categoria.items.length < 2) return categoria;
+      const textoCategoria = normalizarTexto(`${categoria.title} ${categoria.items.map((p) => `${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`).join(" ")}`);
+      const ehMeioCento = /meio cento|1\\s*\\/\\s*2 cento|1\\/2 cento|meio-cento/.test(textoCategoria);
+      const ehCategoriaCento = /cento|centena/.test(titulo) ||
+        (/salgad/.test(titulo) && categoria.items.some((p) =>
+          /cento|centena|100 unidades|50 unidades|meio cento|1\\s*\\/\\s*2/.test(
+            normalizarTexto(`${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`)
+          )
+        ));
+      if (!ehCategoriaCento || categoria.items.length < 2) return categoria;
 
+      const alvo = ehMeioCento ? 50 : 100;
       const candidatos = categoria.items.filter((p) => {
         const texto = normalizarTexto(`${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`);
-        return /cento|centena|100 unidades|50 unidades|meio cento|1\/2 cento/.test(texto) ||
-          p.sizes.some((z) => packUnitCount(z.label, p.name) >= 50);
+        return !/combo|kit festa|bebida|refrigerante|refri/.test(texto) &&
+          !/avulso|lanche|congelado/.test(texto);
       });
       if (candidatos.length < 2) return categoria;
 
-      const meioCento = /1\/2|meio cento|50 unidades/.test(titulo);
-      const alvo = meioCento ? 50 : 100;
-      const baseProduto = candidatos.find((p) => packUnitCount(p.sizes[0]?.label ?? "", p.name) === alvo) ?? candidatos[0];
+      const baseProduto = candidatos.find((p) =>
+        p.sizes.some((z) => packUnitCount(z.label, p.name) === alvo) ||
+        packUnitCount(p.sizes[0]?.label ?? "", p.name) === alvo
+      ) ?? candidatos[0];
       const sabores = candidatos.map((p) => p.name);
       const montavel = {
         ...baseProduto,
         id: `__montar_cento_${categoria.id}`,
-        name: meioCento ? "Monte seu meio cento" : "Monte seu cento",
+        name: ehMeioCento ? "Monte seu meio cento" : "Monte seu cento",
         description: `Escolha os sabores e distribua exatamente ${alvo} unidades.`,
+        price: baseProduto.price ?? baseProduto.sizes.find((z) => packUnitCount(z.label, baseProduto.name) === alvo)?.price ?? baseProduto.sizes[0]?.price ?? 0,
+        sizes: [],
         flavors: sabores,
         single_flavors: [],
+        units_base: alvo,
+        units_per_flavor: 1,
         choice_groups: [],
         allow_assorted: true,
         _packFlavorMode: true,
@@ -359,7 +372,6 @@ function Cardapio() {
         items: [montavel, ...categoria.items.filter((p) => !candidatos.some((x) => x.id === p.id))],
       };
     });
-
     return agrupados.map((c) => ({
       ...c,
       title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}`,
