@@ -568,7 +568,7 @@ function PainelConteudo({ password }: { password: string }) {
             <p style={{ ...subtitulo, marginTop: 0 }}>Loja</p>
             <p style={dica}>
               O cardápio mostra agora:{" "}
-              <b>{lojaEstaAberta(store.open_status) ? "ABERTA" : "FECHADA"}</b>
+              <b>{lojaEstaAberta(store.open_status, new Date(), store.hours_text) ? "ABERTA" : "FECHADA"}</b>
               {store.open_status === "auto" ? " (seguindo o horário)" : " (forçado por você)"}
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
