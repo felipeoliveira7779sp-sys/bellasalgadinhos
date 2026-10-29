@@ -327,7 +327,9 @@ function Cardapio() {
       setBairro(end.bairro);
       setCidade(end.cidade);
       setUf(end.uf);
-      const coords = end.lat !== null && end.lon !== null ? { lat: end.lat, lon: end.lon } : null;
+      // As coordenadas do serviço de CEP costumam ser o centro da cidade (distância errada);
+      // localizamos pela rua/bairro no mapa.
+      const coords = null;
       setCoordsCliente(coords);
       if (!end.rua) {
         setCalc({
