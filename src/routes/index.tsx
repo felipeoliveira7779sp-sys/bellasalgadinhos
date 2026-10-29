@@ -242,7 +242,8 @@ function Cardapio() {
             return {
               ...prepared,
               ...(usesFlavorQuantities(prepared, c.title) ? { _qtyModeCategoria: true } : {}),
-              ...(normalizarTexto(c.title).includes("salgados fritos") && prepared.flavors?.length
+              ...((packUnitCount(prepared.sizes?.[0]?.label ?? "", prepared.name) > 0 ||
+                /\\b(cento|centena)\\b/.test(normalizarTexto(prepared.name))) && prepared.flavors?.length
                 ? { _packFlavorMode: true }
                 : {}),
               ...(isTwoLiterDrink && drinkOptions.length
@@ -255,24 +256,42 @@ function Cardapio() {
       }))
       .filter((c) => c.items.length > 0);
 
-    const bebida = base.filter((c) => {
-      const t = normalizarTexto(c.title);
-      return t.includes("bebida") || t.includes("refrigerante") || t.includes("lata") || t.includes("suco");
+    const isBeverageCategory = (title: string) => {
+      const t = normalizarTexto(title);
+      return t.includes("bebida") || t.includes("refrigerante") || t.includes("refri") || t.includes("lata") || t.includes("suco");
+    };
+    const bebida = base.filter((c) => isBeverageCategory(c.title));
+    const outras = base.filter((c) => !isBeverageCategory(c.title));
+
+    // Refrigerantes de 2L ganham uma aba própria e continuam usando os produtos,
+    // preços e fotos cadastrados na Bella. Os demais itens de bebida ficam em Bebidas.
+    const itensRefri2L = bebida.flatMap((c) => c.items).filter((p) => {
+      const texto = normalizarTexto(`${p.name} ${p.description ?? ""}`);
+      return /\\b2\\s*l\\b|\\b2l\\b|2 litros|dois litros/.test(texto);
     });
-    const outras = base.filter((c) => !bebida.includes(c));
+    const idsRefri2L = new Set(itensRefri2L.map((p) => p.id));
+    const itensOutrasBebidas = bebida.flatMap((c) => c.items).filter((p) => !idsRefri2L.has(p.id));
 
     const resultado = [...outras];
-    if (bebida.length > 0) {
+    if (itensRefri2L.length > 0) {
+      resultado.push({
+        ...bebida[0],
+        id: "__refri_2l",
+        title: "🥤 Refri 2L",
+        items: itensRefri2L,
+      });
+    }
+    if (itensOutrasBebidas.length > 0) {
       resultado.push({
         ...bebida[0],
         id: "__bebidas",
         title: "🥤 Bebidas",
-        items: bebida.flatMap((c) => c.items),
+        items: itensOutrasBebidas,
       });
     }
 
-    // Mantém cada categoria cadastrada como uma única seção, como no Sabor&Tal.
-    // Não divide "Salgados Fritos" em várias seções por quantidade.
+    // Cada produto aparece uma única vez. As categorias de salgados continuam
+    // inteiras, sem criar seções artificiais por quantidade.
     return resultado.map((c) => ({
       ...c,
       title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}`,
