@@ -231,7 +231,7 @@ function Cardapio() {
             const prepared = applyCatalogChoices(p);
             const productText = normalizarTexto(`${prepared.name} ${prepared.description ?? ""} ${c.title}`);
             const isTwoLiterDrink = /refrigerante|refri|bebida/.test(productText) &&
-              (/2\\s*l|2 litros|2l/.test(productText) || /refrigerante 2l|refri 2l|2 litros/.test(normalizarTexto(prepared.name)));
+              (/2\s*l|2 litros|2l/.test(productText) || /refrigerante 2l|refri 2l|2 litros/.test(normalizarTexto(prepared.name)));
             const drinkOptions = (prepared.choice_groups?.[0] as ChoiceGroup | undefined)?.options ?? [];
             return {
               ...prepared,
