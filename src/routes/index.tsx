@@ -265,12 +265,20 @@ function Cardapio() {
 
     // Refrigerantes de 2L ganham uma aba própria e continuam usando os produtos,
     // preços e fotos cadastrados na Bella. Os demais itens de bebida ficam em Bebidas.
-    const itensRefri2L = bebida.flatMap((c) => c.items).filter((p) => {
-      const texto = normalizarTexto(`${p.name} ${p.description ?? ""}`);
+    const produtosBebida = bebida.flatMap((c) =>
+      c.items.map((p) => ({ product: p, categoryTitle: c.title })),
+    );
+    const ehRefri2L = (p: Product, categoryTitle: string) => {
+      const texto = normalizarTexto(`${p.name} ${p.description ?? ""} ${categoryTitle}`);
       return /\\b2\\s*l\\b|\\b2l\\b|2 litros|dois litros/.test(texto);
-    });
+    };
+    const itensRefri2L = produtosBebida.filter(({ product, categoryTitle }) =>
+      ehRefri2L(product, categoryTitle),
+    ).map(({ product }) => product);
     const idsRefri2L = new Set(itensRefri2L.map((p) => p.id));
-    const itensOutrasBebidas = bebida.flatMap((c) => c.items).filter((p) => !idsRefri2L.has(p.id));
+    const itensOutrasBebidas = produtosBebida
+      .filter(({ product }) => !idsRefri2L.has(product.id))
+      .map(({ product }) => product);
 
     const resultado = [...outras];
     if (itensRefri2L.length > 0) {
