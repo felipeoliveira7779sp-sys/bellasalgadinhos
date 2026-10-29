@@ -139,7 +139,7 @@ function Cardapio() {
 
   const store = data?.store ?? null;
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
-  const whatsLoja = (store?.whatsapp ?? "").replace(/\D/g, "");
+  const whatsLoja = "556892505137"; // WhatsApp da loja informado pelo proprietário
   const lojaCoords: CoordenadaGeo | null =
     store && store.store_lat !== null && store.store_lon !== null
       ? { lat: store.store_lat, lon: store.store_lon }
