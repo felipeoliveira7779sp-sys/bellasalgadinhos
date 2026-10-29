@@ -8,7 +8,8 @@ function checkPassword(password: string) {
       "Configuração do painel incompleta: ADMIN_PASSWORD não está configurada no servidor.",
     );
   }
-  if (password !== expected) {
+  // Remove espaços acidentais no início/fim sem alterar espaços internos.
+  if (password.trim() !== expected.trim()) {
     throw new Error("Senha incorreta");
   }
 }
