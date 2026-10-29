@@ -271,15 +271,12 @@ function Cardapio() {
       });
     }
 
-    return resultado.flatMap((c) => {
-      if (normalizarTexto(c.title).replace(/^.*? /, "") !== "salgados fritos" && normalizarTexto(c.title) !== "salgados fritos") return [c];
-      return splitFriedProducts(c.items).map((group, index) => ({
-        ...c,
-        id: `${c.id}-fritos-${index}`,
-        title: `${iconFor(c.title)} ${group.title.replace(/^Salgados Fritos\s*[—-]?\s*/i, "")}`.trim(),
-        items: group.items,
-      }));
-    }).map((c) => ({ ...c, title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}` }));
+    // Mantém cada categoria cadastrada como uma única seção, como no Sabor&Tal.
+    // Não divide "Salgados Fritos" em várias seções por quantidade.
+    return resultado.map((c) => ({
+      ...c,
+      title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}`,
+    }));
   }, [data]);
 
   useEffect(() => {
