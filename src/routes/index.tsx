@@ -281,26 +281,86 @@ function Cardapio() {
       .map(({ product }) => product);
 
     const resultado = [...outras];
-    if (itensRefri2L.length > 0) {
+    if (itensRefri2L.length > 0 && bebida[0]) {
+      const primeiro = itensRefri2L[0];
+      const sabores = itensRefri2L.map((p) => p.name);
+      const refriMontavel = {
+        ...primeiro,
+        id: "__montar_refri_2l",
+        name: "Monte seu Refri 2L",
+        description: "Escolha os sabores e a quantidade de cada refrigerante.",
+        flavors: sabores,
+        single_flavors: [],
+        choice_groups: [],
+        allow_assorted: true,
+        _qtyModeCategoria: true,
+      } as Product;
       resultado.push({
         ...bebida[0],
         id: "__refri_2l",
         title: "🥤 Refri 2L",
-        items: itensRefri2L,
+        items: [refriMontavel],
       });
     }
-    if (itensOutrasBebidas.length > 0) {
+    if (itensOutrasBebidas.length > 0 && bebida[0]) {
+      const primeiro = itensOutrasBebidas[0];
+      const bebidasMontaveis = {
+        ...primeiro,
+        id: "__montar_bebidas",
+        name: "Escolha suas bebidas",
+        description: "Escolha os sabores e informe a quantidade de cada um.",
+        flavors: itensOutrasBebidas.map((p) => p.name),
+        single_flavors: [],
+        choice_groups: [],
+        allow_assorted: true,
+        _qtyModeCategoria: true,
+      } as Product;
       resultado.push({
         ...bebida[0],
         id: "__bebidas",
         title: "🥤 Bebidas",
-        items: itensOutrasBebidas,
+        items: [bebidasMontaveis],
       });
     }
 
-    // Cada produto aparece uma única vez. As categorias de salgados continuam
-    // inteiras, sem criar seções artificiais por quantidade.
-    return resultado.map((c) => ({
+    // Cada aba de salgadinhos vira um configurador único quando os itens
+    // representam sabores do mesmo pacote; não deixa cada sabor solto no menu.
+    const agrupados = resultado.map((categoria) => {
+      const titulo = normalizarTexto(categoria.title);
+      const ehSalgadinho = /salgad|frito/.test(titulo) &&
+        !/congelado|lanche|avulso/.test(titulo);
+      if (!ehSalgadinho || categoria.items.length < 2) return categoria;
+
+      const candidatos = categoria.items.filter((p) => {
+        const texto = normalizarTexto(`${p.name} ${p.description ?? ""} ${p.sizes.map((z) => z.label).join(" ")}`);
+        return /cento|centena|100 unidades|50 unidades|meio cento|1\/2 cento/.test(texto) ||
+          p.sizes.some((z) => packUnitCount(z.label, p.name) >= 50);
+      });
+      if (candidatos.length < 2) return categoria;
+
+      const meioCento = /1\/2|meio cento|50 unidades/.test(titulo);
+      const alvo = meioCento ? 50 : 100;
+      const baseProduto = candidatos.find((p) => packUnitCount(p.sizes[0]?.label ?? "", p.name) === alvo) ?? candidatos[0];
+      const sabores = candidatos.map((p) => p.name);
+      const montavel = {
+        ...baseProduto,
+        id: `__montar_cento_${categoria.id}`,
+        name: meioCento ? "Monte seu meio cento" : "Monte seu cento",
+        description: `Escolha os sabores e distribua exatamente ${alvo} unidades.`,
+        flavors: sabores,
+        single_flavors: [],
+        choice_groups: [],
+        allow_assorted: true,
+        _packFlavorMode: true,
+        _packTargetOverride: alvo,
+      } as Product;
+      return {
+        ...categoria,
+        items: [montavel, ...categoria.items.filter((p) => !candidatos.some((x) => x.id === p.id))],
+      };
+    });
+
+    return agrupados.map((c) => ({
       ...c,
       title: c.title.match(/^[🥟🥐❄️🎁🥤🍕🥧🍬🎂🍴]/u) ? c.title : `${iconFor(c.title)} ${c.title}`,
     }));
@@ -335,7 +395,7 @@ function Cardapio() {
     : 0;
   const isQtyMode = open ? Boolean((open as Product & { _qtyModeCategoria?: boolean })._qtyModeCategoria) : false;
   const isPackFlavorMode = open ? Boolean((open as Product & { _packFlavorMode?: boolean })._packFlavorMode) : false;
-  const packTarget = open ? packUnitCount(open.sizes[sizeIdx]?.label ?? "", open.name) : 0;
+  const packTarget = open ? ((open as Product & { _packTargetOverride?: number })._packTargetOverride ?? packUnitCount(open.sizes[sizeIdx]?.label ?? "", open.name)) : 0;
   const listaSaboresQty = open ? (open.flavors?.length ? open.flavors : open.single_flavors ?? []) : [];
   const totalFlavorQty = Object.values(flavorQtys).reduce((a, b) => a + b, 0);
 
