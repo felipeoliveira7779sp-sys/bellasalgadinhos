@@ -495,14 +495,19 @@ function Cardapio() {
     }
     txt += `\n📦 *ITENS:*\n`;
     cart.forEach((i) => {
-      txt += `• *${i.qty}x ${i.name}*`;
-      if (i.sizeLabel) txt += ` (${i.sizeLabel})`;
-      txt += ` - ${money(precoUnitarioNoPagamento(i) * i.qty)}\n`;
-      if (i.flavors.length) txt += `   _Sabores: ${i.flavors.join(", ")}_\n`;
-      if (i.singleFlavor) txt += `   _Sabor: ${i.singleFlavor}_\n`;
+      // Remove marcadores de formatação digitados no cadastro para não quebrar
+      // o negrito do WhatsApp quando o nome do produto contém *, _ ou ~.
+      const textoSeguro = (valor: string) => valor.replace(/[\\*_~`]/g, "").replace(/[\\r\\n]+/g, " ").trim();
+      const nomeProduto = textoSeguro(i.name);
+      const tamanhoProduto = textoSeguro(i.sizeLabel ?? "");
+      const detalheTamanho = tamanhoProduto ? ` (${tamanhoProduto})` : "";
+      const linhaItem = `• ${i.qty}x ${nomeProduto}${detalheTamanho} - ${money(precoUnitarioNoPagamento(i) * i.qty)}`;
+      txt += `*${linhaItem}*\\n`;
+      if (i.flavors.length) txt += `   _Sabores: ${i.flavors.map(textoSeguro).join(", ")}_\\n`;
+      if (i.singleFlavor) txt += `   _Sabor: ${textoSeguro(i.singleFlavor)}_\\n`;
       const escolhas = Object.entries(i.choices);
-      if (escolhas.length) txt += `   _Escolhas: ${escolhas.map(([k, v]) => `${k}: ${v}`).join(" | ")}_\n`;
-      if (i.obs) txt += `   _Obs: ${i.obs}_\n`;
+      if (escolhas.length) txt += `   _Escolhas: ${escolhas.map(([k, v]) => `${textoSeguro(k)}: ${textoSeguro(v)}`).join(" | ")}_\\n`;
+      if (i.obs) txt += `   _Obs: ${textoSeguro(i.obs)}_\\n`;
     });
     txt += `\n💳 *Pagamento:* ${pagamento}`;
     if (pagamento === "Dinheiro" && troco) txt += ` (Troco para: R$ ${troco})`;
