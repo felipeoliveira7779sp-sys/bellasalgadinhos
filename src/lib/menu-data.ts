@@ -18,6 +18,7 @@ export type Product = {
   allow_assorted: boolean;
   choice_groups: ChoiceGroup[];
   active: boolean;
+  is_promotion: boolean;
   position: number;
 };
 
@@ -94,6 +95,7 @@ export async function fetchMenu() {
         flavors: (row["flavors"] as string[]) ?? [],
         single_flavors: (row["single_flavors"] as string[]) ?? [],
         allow_assorted: Boolean(row["allow_assorted"]),
+        is_promotion: Boolean(row["is_promotion"]),
         choice_groups: (row["choice_groups"] as ChoiceGroup[]) ?? [],
       } as Product;
     }),
