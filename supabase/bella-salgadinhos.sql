@@ -59,6 +59,10 @@ create table if not exists menu_products (
 
 create index if not exists idx_menu_products_category on menu_products(category_id);
 
+-- Coluna usada pelo painel para marcar produtos em promoção.
+-- Também atualiza bancos já existentes sem apagar dados.
+alter table menu_products add column if not exists is_promotion boolean not null default false;
+
 -- ================= Storage =================
 -- Criar um bucket chamado "menu" (Storage > New bucket) para as fotos.
 -- Pode ficar privado: o código gera link assinado de 10 anos.
