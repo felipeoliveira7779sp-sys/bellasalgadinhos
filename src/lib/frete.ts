@@ -166,41 +166,60 @@ export type DadosEndereco = {
   coords: CoordenadaGeo | null; // coordenadas já conhecidas (ex: vindas do CEP)
 };
 
-type NominatimItem = { lat: string; lon: string };
+type NominatimItem = {
+  lat: string;
+  lon: string;
+  address?: {
+    house_number?: string;
+    road?: string;
+    pedestrian?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    city?: string;
+    town?: string;
+    municipality?: string;
+    state?: string;
+  };
+  importance?: number;
+  type?: string;
+  class?: string;
+};
+
+function normalizarTexto(v: string) {
+  return v.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
-  const base = { format: "jsonv2", limit: "3", countrycodes: "br", "accept-language": "pt-BR" };
+  const base = { format: "jsonv2", limit: "5", countrycodes: "br", "accept-language": "pt-BR", addressdetails: "1" };
   const estado = UF_NOMES[p.uf.toUpperCase()] ?? p.uf;
   const tentativas: URLSearchParams[] = [];
+  const rua = p.rua.trim();
+  const numero = p.numero.trim();
+  const bairro = p.bairro.trim();
+  const cidade = p.cidade.trim();
 
-  // Primeiro tenta o endereço completo em texto livre, incluindo número e bairro.
-  // Isso evita localizar apenas o centro da rua ou do bairro quando há número informado.
-  if (p.rua && p.numero) {
-    tentativas.push(
-      new URLSearchParams({
-        ...base,
-        q: `${p.numero}, ${p.rua}, ${p.bairro}, ${p.cidade}, ${estado}, Brasil`,
-        addressdetails: "1",
-      }),
-    );
-    tentativas.push(
-      new URLSearchParams({
-        ...base,
-        street: `${p.numero} ${p.rua}`,
-        city: p.cidade,
-        county: p.bairro,
-        state: estado,
-        country: "Brasil",
-        addressdetails: "1",
-      }),
-    );
-  } else if (p.rua) {
-    tentativas.push(
-      new URLSearchParams({ ...base, q: `${p.rua}, ${p.bairro}, ${p.cidade}, ${estado}, Brasil`, addressdetails: "1" }),
-    );
-  }
-  if (p.bairro) {
-    tentativas.push(new URLSearchParams({ ...base, q: `${p.bairro}, ${p.cidade}, ${estado}, Brasil` }));
+  // O número e a rua são os dados mais importantes: não começar pelo CEP
+  // nem pelo bairro, pois isso pode apontar para o centro da região.
+  if (rua && numero) {
+    tentativas.push(new URLSearchParams({
+      ...base,
+      street: `${numero} ${rua}`,
+      city: cidade,
+      state: estado,
+      country: "Brasil",
+    }));
+    tentativas.push(new URLSearchParams({
+      ...base,
+      q: `${numero}, ${rua}, ${bairro}, ${cidade}, ${estado}, Brasil`,
+    }));
+  } else if (rua) {
+    tentativas.push(new URLSearchParams({
+      ...base,
+      street: rua,
+      city: cidade,
+      state: estado,
+      country: "Brasil",
+    }));
   }
 
   for (let i = 0; i < tentativas.length; i++) {
@@ -208,28 +227,46 @@ async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${tentativas[i]}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        // Prefere um resultado que identifique o número da residência, quando o mapa possui esse dado.
-        const item = lista.find((candidato: any) => {
-          const endereco = candidato.address ?? {};
-          return p.numero && String(endereco.house_number ?? "") === p.numero;
-        }) ?? lista[0];
-        if (item) {
-          const lat = numeroValido(item.lat);
-          const lon = numeroValido(item.lon);
-          if (lat !== null && lon !== null) return { lat, lon };
+        const ruaAlvo = normalizarTexto(rua);
+        const candidatos = lista
+          .map((item) => {
+            const endereco = item.address ?? {};
+            const ruaEncontrada = normalizarTexto(endereco.road ?? endereco.pedestrian ?? "");
+            const numeroEncontrado = String(endereco.house_number ?? "").trim();
+            const bairroEncontrado = normalizarTexto(endereco.suburb ?? endereco.neighbourhood ?? "");
+            const ruaConfere = !ruaAlvo || !ruaEncontrada || ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada);
+            const numeroConfere = !numero || numeroEncontrado === numero;
+            const bairroAlvo = normalizarTexto(bairro);
+            const bairroConfere = !bairroAlvo || !bairroEncontrado || bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+            const lat = numeroValido(item.lat);
+            const lon = numeroValido(item.lon);
+            return { item, lat, lon, pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) + (item.class === "place" ? 0 : 1) };
+          })
+          .filter((c) => c.lat !== null && c.lon !== null && c.pontos >= (numero ? 8 : 4))
+          .sort((a, b) => b.pontos - a.pontos);
+        const melhor = candidatos[0];
+        if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
+          return { lat: melhor.lat, lon: melhor.lon };
         }
       }
     } catch {
-      // tenta a próxima consulta com menos detalhes
+      // tenta a segunda consulta, ainda usando rua e número
     }
-    // política do Nominatim: no máximo 1 consulta por segundo
     if (i < tentativas.length - 1) await esperar(1100);
   }
-  return null;
+
+  // Sem número exato no mapa, é mais seguro pedir ajuste do endereço do que
+  // calcular a taxa usando o centro do bairro e cobrar um valor possivelmente errado.
+  throw new Error(
+    numero
+      ? "Não encontrei o número desse endereço com precisão no mapa. Confira rua e número ou entre em contato com a loja."
+      : "Não consegui localizar essa rua com precisão. Confira o endereço e tente novamente.",
+  );
 }
 
 export async function resolverCoordenadas(p: DadosEndereco): Promise<CoordenadaGeo | null> {
-  if (p.coords) return p.coords;
+  // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
+  // Sempre priorizar a geocodificação do endereço digitado.
   return geocodificar(p);
 }
 
