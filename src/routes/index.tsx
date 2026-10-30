@@ -11,6 +11,7 @@ import {
   buscarCep,
   calcularKmEntrega,
   calcularTaxaEntrega,
+  buscarSugestoesRua,
   formatarCep,
   limparCep,
   type CoordenadaGeo,
@@ -122,10 +123,8 @@ function Cardapio() {
     const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
     return `${valor("year")}-${valor("month")}-${valor("day")}`;
   };
-  const [dataPedido, setDataPedido] = useState(() => {
-    const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    return dataLocalRioBranco(amanha);
-  });
+  const [modoPedido, setModoPedido] = useState<"agora" | "agendado">("agora");
+  const [dataPedido, setDataPedido] = useState(() => dataLocalRioBranco());
   const [horario, setHorario] = useState("");
   const [pagamento, setPagamento] = useState("");
   const [troco, setTroco] = useState("");
@@ -133,6 +132,8 @@ function Cardapio() {
   // Endereço de entrega
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
+  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; bairro: string; cidade: string; uf: string; label: string }[]>([]);
+  const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
@@ -145,8 +146,8 @@ function Cardapio() {
   const store = data?.store ?? null;
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
   const whatsLoja = "556892505137"; // WhatsApp da loja informado pelo proprietário
-  // Coordenadas da Bella Salgadinhos confirmadas pela responsável da loja.
-  const lojaCoords: CoordenadaGeo = { lat: -9.957724, lon: -67.825768 };
+  // Prioriza as coordenadas salvas no painel; mantém o ponto confirmado como reserva.
+  const lojaCoords: CoordenadaGeo | null = store?.store_lat != null && store?.store_lon != null ? { lat: store.store_lat, lon: store.store_lon } : { lat: -9.957724, lon: -67.825768 };
 
   // Salgadinhos e refrigerantes agrupados em um único card cada
   const grupos = useMemo(() => {
@@ -406,6 +407,17 @@ function Cardapio() {
     }
   }
 
+  function aoDigitarRua(valor: string) {
+    setRua(valor); setSugestoesRua([]); limparCalculo();
+    if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
+    if (valor.trim().length < 4) return;
+    buscaRuaTimer.current = setTimeout(async () => { try { setSugestoesRua(await buscarSugestoesRua(valor, cidade || "Rio Branco", uf || "AC")); } catch { setSugestoesRua([]); } }, 700);
+  }
+  function selecionarSugestaoRua(s: { rua: string; bairro: string; cidade: string; uf: string }) {
+    setRua(s.rua); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
+    setSugestoesRua([]); limparCalculo();
+  }
+
   function aoDigitarCep(valor: string) {
     const formatado = formatarCep(valor);
     setCep(formatado);
@@ -431,11 +443,11 @@ function Cardapio() {
   async function sendOrder() {
     if (enviando) return;
     const hojeLocal = dataLocalRioBranco();
-    if (pedidoHoje && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
+    if (modoPedido === "agora" && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
       alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
       return;
     }
-    if (!nome || !tel || !dataPedido || !horario || !pagamento) {
+    if (!nome || !tel || !pagamento || (modoPedido === "agendado" && (!dataPedido || !horario))) {
       alert("Preencha todos os campos obrigatórios!");
       return;
     }
@@ -458,7 +470,9 @@ function Cardapio() {
       return;
     }
 
-    const [ano, mes, dia] = dataPedido.split("-");
+    const dataEfetiva = modoPedido === "agora" ? hojeLocal : dataPedido;
+    const horarioEfetivo = modoPedido === "agora" ? "40-70 min" : horario;
+    const [ano, mes, dia] = dataEfetiva.split("-");
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
@@ -500,8 +514,9 @@ function Cardapio() {
           customer_name: nome,
           customer_phone: tel,
           order_type: tipo,
-          scheduled_date: dataPedido,
-          scheduled_time: horario,
+          order_mode: modoPedido,
+          scheduled_date: dataEfetiva,
+          scheduled_time: horarioEfetivo,
           payment_method: pagamento,
           change_for: pagamento === "Dinheiro" && troco ? troco : null,
           cep: tipo === "entrega" && cep ? cep : null,
@@ -925,32 +940,17 @@ function Cardapio() {
           </div>
 
           <div className="form-section">
-            <h3>📅 Data e Horário</h3>
-            <div className="datetime-section">
-              <div className="input-group">
-                <input
-                  type="date"
-                  min={dataLocalRioBranco()}
-                  className="input-control"
-                  value={dataPedido}
-                  onChange={(e) => { setDataPedido(e.target.value); setHorario(""); }}
-                />
-              </div>
-              <div className="input-group">
-                <select
-                  className="input-control"
-                  value={horario}
-                  onChange={(e) => setHorario(e.target.value)}
-                >
-                  <option value="">Selecione...</option>
-                  {horarios.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <h3>Quando deseja receber?</h3>
+            <div className="delivery-options">
+              <button type="button" className={`delivery-option ${modoPedido === "agora" ? "selected" : ""}`} onClick={() => { setModoPedido("agora"); setDataPedido(dataLocalRioBranco()); setHorario(""); }}>Pedir agora</button>
+              <button type="button" className={`delivery-option ${modoPedido === "agendado" ? "selected" : ""}`} onClick={() => setModoPedido("agendado")}>Agendar pedido</button>
             </div>
+            {modoPedido === "agora" ? <div style={caixa("#eff6ff", "#bfdbfe", "#1e40af")}>⏱️ Prazo estimado de preparo: <b>40 a 70 minutos</b>.</div> : (
+              <div className="datetime-section">
+                <div className="input-group"><input type="date" min={dataLocalRioBranco()} className="input-control" value={dataPedido} onChange={(e) => { setDataPedido(e.target.value); setHorario(""); }} /></div>
+                <div className="input-group"><select className="input-control" value={horario} onChange={(e) => setHorario(e.target.value)}><option value="">Selecione o horário...</option>{horarios.map((h) => <option key={h} value={h}>{h}</option>)}</select>{horarios.length === 0 ? <small>Não há horários disponíveis para esta data. Escolha outra data.</small> : null}</div>
+              </div>
+            )}
           </div>
 
           <div className="form-section">
@@ -998,9 +998,14 @@ function Cardapio() {
                   className="input-control"
                   placeholder="Rua / Avenida"
                   value={rua}
-                  onChange={(e) => editarEndereco(setRua, e.target.value)}
+                  onChange={(e) => aoDigitarRua(e.target.value)}
                 />
               </div>
+              {sugestoesRua.length > 0 ? (
+                <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
+                  {sugestoesRua.map((s, i) => <button key={`${s.label}-${i}`} type="button" onClick={() => selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
+                </div>
+              ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
                 <input
                   className="input-control"
