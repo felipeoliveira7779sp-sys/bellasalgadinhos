@@ -203,10 +203,7 @@ function Cardapio() {
       timeZone: "America/Rio_Branco", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
     }).formatToParts(agora);
     const valor = (tipo: string) => localParts.find((p) => p.type === tipo)?.value ?? "";
-    const diaSemana = valor("weekday");
-    const diasPermitidos = /seg|segunda/i.test(store?.hours_text ?? "") && /s[aá]b|sábado/i.test(store?.hours_text ?? "")
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const diasPermitidos = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const [ano, mes, dia] = dataPedido.split("-").map(Number);
     const diaEscolhido = new Date(Date.UTC(ano, mes - 1, dia, 12)).toLocaleDateString("en-US", { timeZone: "America/Rio_Branco", weekday: "short" });
     if (!diasPermitidos.includes(diaEscolhido)) return [];
