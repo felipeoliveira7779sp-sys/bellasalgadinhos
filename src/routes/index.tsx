@@ -43,6 +43,7 @@ type CartItem = {
   qty: number;
   unitPrice: number;
   sizeLabel: string;
+  unitsPerPackage: number;
   flavors: string[];
   singleFlavor: string;
   choices: Record<string, string>;
@@ -185,19 +186,14 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  // Identifica apenas produtos de salgadinhos pelo nome e pelo tamanho escolhido.
-  // Aceita rótulos como "Cento (100 un)", "100 unidades", "Meio cento" e "50 un".
-  const unidadesSalgadosNoCarrinho = cart.reduce((total, item) => {
-    const identificacao = `${item.name} ${item.sizeLabel}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    if (!identificacao.includes("salgad")) return total;
-    const unidadesPorPacote = /meio\s*cento|\b50\s*(?:un|unidades)?\b/.test(identificacao)
-      ? 50
-      : /\bcento\b|\b100\s*(?:un|unidades)?\b/.test(identificacao)
-        ? 100
-        : 0;
-    return total + unidadesPorPacote * item.qty;
-  }, 0);
-  const adicionalCartaoCentos = pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
+  // A quantidade de unidades é salva no item quando ele entra no carrinho,
+  // usando o tamanho escolhido ou units_base do cadastro do produto.
+  const unidadesSalgadosNoCarrinho = cart.reduce(
+    (total, item) => total + item.unitsPerPackage * item.qty,
+    0,
+  );
+  const adicionalCartaoCentos =
+    pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
   const precoUnitarioNoPagamento = (item: CartItem) => item.unitPrice;
   const subtotalBase = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
   const subtotal = subtotalBase + adicionalCartaoCentos;
@@ -270,6 +266,7 @@ function Cardapio() {
           qty: q,
           unitPrice: refriPrecos[f] ?? 0,
           sizeLabel: "",
+          unitsPerPackage: 0,
           flavors: [],
           singleFlavor: "",
           choices: {},
@@ -297,6 +294,13 @@ function Cardapio() {
         qty,
         unitPrice,
         sizeLabel: isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""),
+        unitsPerPackage: (() => {
+          const label = (isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""))
+            .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+          if (/meio\\s*cento|\\b50\\s*(?:un|unidades)?\\b/.test(label)) return 50;
+          if (/\\bcento\\b|\\b100\\s*(?:un|unidades)?\\b/.test(label)) return 100;
+          return Number(open.units_base) > 0 ? Number(open.units_base) : 0;
+        })(),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
         singleFlavor: open.single_flavors.length > 0 ? single : "",
         choices: Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title] ?? ""])),
