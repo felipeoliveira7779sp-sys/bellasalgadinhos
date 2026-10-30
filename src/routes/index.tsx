@@ -189,9 +189,9 @@ function Cardapio() {
   // Dois meios centos (50 + 50), por exemplo, geram apenas R$ 1.
   const unidadesSalgadosNoCarrinho = cart.reduce((total, item) => {
     const tamanho = `${item.sizeLabel} ${item.name}`.toLowerCase();
-    const unidadesPorPacote = /meio\\s*cento|50\\s*(?:un|unidades)?/.test(tamanho)
+    const unidadesPorPacote = /meio\s*cento|50\s*(?:un|unidades)?/i.test(tamanho)
       ? 50
-      : /cento|100\\s*(?:un|unidades)?/.test(tamanho)
+      : /cento|100\s*(?:un|unidades)?/i.test(tamanho)
         ? 100
         : 0;
     return total + unidadesPorPacote * item.qty;
