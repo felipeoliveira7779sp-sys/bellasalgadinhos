@@ -191,7 +191,7 @@ function Cardapio() {
   const qtdTotal = cart.reduce((a, i) => a + i.qty, 0);
 
   const horarios: string[] = (() => {
-    const faixa = store?.hours_text?.match(/(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*[-–a]\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?/i);
+    const faixa = store?.hours_text?.match(/(\d{1,2})(?::(\d{2}))?\s*h?\s*[-–a]\s*(\d{1,2})(?::(\d{2}))?\s*h?/i);
     if (!faixa) return [];
     const inicio = Number(faixa[1]) * 60 + Number(faixa[2] ?? 0);
     const fim = Number(faixa[3]) * 60 + Number(faixa[4] ?? 0);
@@ -895,7 +895,7 @@ function Cardapio() {
               <div className="input-group">
                 <input
                   type="date"
-                  min={new Date().toLocaleDateString("en-CA")}
+                  min={dataLocalRioBranco()}
                   className="input-control"
                   value={dataPedido}
                   onChange={(e) => { setDataPedido(e.target.value); setHorario(""); }}
@@ -1135,8 +1135,10 @@ function Cardapio() {
           </div>
 
           <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || horarios.length === 0 || (dataPedido === dataLocalRioBranco() && !aberto)}>
-            {horarios.length === 0 ? true : !aberto && dataPedido === dataLocalRioBranco()
-              ? "Loja fechada para pedidos de hoje"
+            {horarios.length === 0
+              ? "Não há horários disponíveis nesta data"
+              : !aberto && dataPedido === dataLocalRioBranco()
+                ? "Loja fechada para pedidos de hoje"
               : enviando
                 ? "Registrando pedido..."
                 : "Enviar Pedido no WhatsApp"}
