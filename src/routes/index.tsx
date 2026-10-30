@@ -187,8 +187,9 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
+  const ehCento = (label: string) => /cento|(?:^|\\D)100(?:\\D|$)/i.test(label);
   const precoUnitarioNoPagamento = (item: CartItem) =>
-    pagamento === "Cartão" && /cento/i.test(item.sizeLabel)
+    pagamento === "Cartão" && ehCento(item.sizeLabel)
       ? item.unitPrice + 1
       : item.unitPrice;
   const subtotal = cart.reduce((a, i) => a + precoUnitarioNoPagamento(i) * i.qty, 0);
@@ -864,7 +865,7 @@ function Cardapio() {
                 ) : null}
                 {i.obs ? <span className="cart-item-add-text">Obs: {i.obs}</span> : null}
                 <br />
-                <span style={{ color: "#15803d", fontWeight: 600 }}>{money(i.unitPrice * i.qty)}</span>
+                <span style={{ color: "#15803d", fontWeight: 600 }}>{money(precoUnitarioNoPagamento(i) * i.qty)}</span>
               </div>
               <button
                 onClick={() => setCart((c) => c.filter((_, n) => n !== idx))}
