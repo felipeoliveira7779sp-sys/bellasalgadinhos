@@ -264,6 +264,55 @@ async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
   );
 }
 
+
+export type SugestaoRua = {
+  rua: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  label: string;
+};
+
+// Busca sugestões de logradouro sem exigir CEP. A seleção só preenche os campos;
+// o cálculo do frete continua geocodificando rua + número para evitar taxa aproximada.
+export async function buscarSugestoesRua(
+  texto: string,
+  cidade = "Rio Branco",
+  uf = "AC",
+): Promise<SugestaoRua[]> {
+  const termo = texto.trim();
+  if (termo.length < 4) return [];
+  const estado = UF_NOMES[uf.toUpperCase()] ?? uf;
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    addressdetails: "1",
+    limit: "6",
+    countrycodes: "br",
+    "accept-language": "pt-BR",
+    q: `${termo}, ${cidade}, ${estado}, Brasil`,
+  });
+  const response = await fetchComTimeout(
+    `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+    7000,
+  );
+  if (!response.ok) throw new Error("Busca de endereço indisponível.");
+  const items = (await response.json()) as NominatimItem[];
+  const vistos = new Set<string>();
+  return items.flatMap((item) => {
+    const a = item.address ?? {};
+    const rua = a.road ?? a.pedestrian ?? "";
+    if (!rua) return [];
+    const bairro = a.suburb ?? a.neighbourhood ?? "";
+    const cidadeEncontrada = a.city ?? a.town ?? a.municipality ?? cidade;
+    const ufEncontrada = a.state ? (Object.entries(UF_NOMES).find(([, nome]) => nome === a.state)?.[0] ?? uf) : uf;
+    const label = [rua, bairro, cidadeEncontrada, ufEncontrada].filter(Boolean).join(" - ");
+    const chave = normalizarTexto(label);
+    if (vistos.has(chave)) return [];
+    vistos.add(chave);
+    return [{ rua, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label }];
+  });
+}
+
 export async function resolverCoordenadas(p: DadosEndereco): Promise<CoordenadaGeo | null> {
   // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
   // Sempre priorizar a geocodificação do endereço digitado.
