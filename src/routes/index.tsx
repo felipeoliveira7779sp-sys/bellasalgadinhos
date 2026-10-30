@@ -297,8 +297,8 @@ function Cardapio() {
         unitsPerPackage: (() => {
           const label = (isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""))
             .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
-          if (/meio\\s*cento|\\b50\\s*(?:un|unidades)?\\b/.test(label)) return 50;
-          if (/\\bcento\\b|\\b100\\s*(?:un|unidades)?\\b/.test(label)) return 100;
+          if (/meio\s*cento|\b50\s*(?:un|unidades)?\b/i.test(label)) return 50;
+          if (/\bcento\b|\b100\s*(?:un|unidades)?\b/i.test(label)) return 100;
           return Number(open.units_base) > 0 ? Number(open.units_base) : 0;
         })(),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
