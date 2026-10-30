@@ -293,13 +293,24 @@ function Cardapio() {
         name: isSalgados ? `Salgadinhos - ${tamanhoAtual}` : open.name,
         qty,
         unitPrice,
-        sizeLabel: isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""),
+        sizeLabel: isSalgados
+          ? tamanhoAtual
+          : (open.sizes[sizeIdx]?.label || open.description || ""),
         unitsPerPackage: (() => {
-          const label = (isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""))
-            .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
-          if (/meio\s*cento|\b50\s*(?:un|unidades)?\b/i.test(label)) return 50;
-          if (/\bcento\b|\b100\s*(?:un|unidades)?\b/i.test(label)) return 100;
-          return Number(open.units_base) > 0 ? Number(open.units_base) : 0;
+          const categoria = data?.categories.find((cat) => cat.id === open.category_id)?.title ?? "";
+          const normalizar = (valor: string) => valor
+            .normalize("NFD")
+            .replace(/[\\u0300-\\u036f]/g, "")
+            .toLowerCase();
+          const tamanho = normalizar(`${tamanhoAtual} ${open.sizes[sizeIdx]?.label ?? ""} ${open.description ?? ""}`);
+          const nomeCategoria = normalizar(categoria);
+          const cadastrado = Number(open.units_base);
+          if (Number.isFinite(cadastrado) && cadastrado > 0) return cadastrado;
+          if (tamanho.includes("meio cento") || tamanho.includes("50 unidade") || /\\b50\\b/.test(tamanho)) return 50;
+          if (tamanho.includes("cento") || tamanho.includes("100 unidade") || /\\b100\\b/.test(tamanho)) return 100;
+          if (nomeCategoria.includes("meio cento")) return 50;
+          if (nomeCategoria.includes("cento")) return 100;
+          return 0;
         })(),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
         singleFlavor: open.single_flavors.length > 0 ? single : "",
