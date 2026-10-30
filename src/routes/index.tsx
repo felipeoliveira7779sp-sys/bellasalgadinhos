@@ -114,10 +114,16 @@ function Cardapio() {
   const [tipo, setTipo] = useState<"entrega" | "retirada">("entrega");
   const [nome, setNome] = useState("");
   const [tel, setTel] = useState("");
+  const dataLocalRioBranco = (data = new Date()) => {
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Rio_Branco", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(data);
+    const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
+    return `${valor("year")}-${valor("month")}-${valor("day")}`;
+  };
   const [dataPedido, setDataPedido] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0] as string;
+    const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    return dataLocalRioBranco(amanha);
   });
   const [horario, setHorario] = useState("");
   const [pagamento, setPagamento] = useState("");
@@ -185,16 +191,27 @@ function Cardapio() {
   const qtdTotal = cart.reduce((a, i) => a + i.qty, 0);
 
   const horarios: string[] = (() => {
-    const faixa = store?.hours_text?.match(/(\d{1,2})(?::(\d{2}))?\s*h?\s*[-–a]\s*(\d{1,2})(?::(\d{2}))?\s*h?/i);
+    const faixa = store?.hours_text?.match(/(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*[-–a]\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?/i);
     if (!faixa) return [];
     const inicio = Number(faixa[1]) * 60 + Number(faixa[2] ?? 0);
     const fim = Number(faixa[3]) * 60 + Number(faixa[4] ?? 0);
-    if (fim <= inicio) return [];
-    const hoje = new Date();
+    if (fim < inicio) return [];
+    const agora = new Date();
+    const hoje = dataLocalRioBranco(agora);
+    const ehHoje = dataPedido === hoje;
+    const localParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Rio_Branco", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(agora);
+    const valor = (tipo: string) => localParts.find((p) => p.type === tipo)?.value ?? "";
+    const diaSemana = valor("weekday");
+    const diasPermitidos = /seg|segunda/i.test(store?.hours_text ?? "") && /s[aá]b|sábado/i.test(store?.hours_text ?? "")
+      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const [ano, mes, dia] = dataPedido.split("-").map(Number);
-    const selecionada = new Date(ano, mes - 1, dia);
-    const ehHoje = selecionada.getFullYear() === hoje.getFullYear() && selecionada.getMonth() === hoje.getMonth() && selecionada.getDate() === hoje.getDate();
-    const primeiroHorario = ehHoje ? Math.max(inicio, Math.ceil((hoje.getHours() * 60 + hoje.getMinutes() + 30) / 30) * 30) : inicio;
+    const diaEscolhido = new Date(Date.UTC(ano, mes - 1, dia, 12)).toLocaleDateString("en-US", { timeZone: "America/Rio_Branco", weekday: "short" });
+    if (!diasPermitidos.includes(diaEscolhido)) return [];
+    const minutoAtual = Number(valor("hour")) * 60 + Number(valor("minute"));
+    const primeiroHorario = ehHoje ? Math.max(inicio, Math.ceil((minutoAtual + 30) / 30) * 30) : inicio;
     const lista: string[] = [];
     for (let minuto = primeiroHorario; minuto <= fim; minuto += 30) {
       lista.push(`${String(Math.floor(minuto / 60)).padStart(2, "0")}:${String(minuto % 60).padStart(2, "0")}`);
@@ -382,7 +399,7 @@ function Cardapio() {
 
   async function sendOrder() {
     if (enviando) return;
-    const hojeLocal = new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" });
+    const hojeLocal = dataLocalRioBranco();
     const pedidoHoje = dataPedido === hojeLocal;
     if (pedidoHoje && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
       alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
@@ -1120,8 +1137,8 @@ function Cardapio() {
             </div>
           </div>
 
-          <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || (!aberto && dataPedido === new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" }))}>
-            {!aberto && dataPedido === new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" })
+          <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || horarios.length === 0 || (dataPedido === dataLocalRioBranco() && !aberto)}>
+            {horarios.length === 0 ? true : !aberto && dataPedido === dataLocalRioBranco()
               ? "Loja fechada para pedidos de hoje"
               : enviando
                 ? "Registrando pedido..."
