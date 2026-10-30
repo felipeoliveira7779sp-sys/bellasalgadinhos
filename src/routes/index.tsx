@@ -476,7 +476,7 @@ function Cardapio() {
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
-      ? "⏱️ *Pedido:* Para agora (prazo estimado de 40 a 70 minutos)\\n"
+      ? "⏱️ *Pedido:* Para agora (prazo estimado de 40 a 70 minutos)\n"
       : `📅 *Agendamento:* ${dia}/${mes}/${ano} às ${horario}\\n`;
     txt += `🚚 *Tipo:* ${tipo === "entrega" ? "Entrega" : "Retirada"}\n`;
     if (tipo === "entrega") {
