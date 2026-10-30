@@ -856,7 +856,6 @@ function PainelConteudo({ password }: { password: string }) {
                   flavors: [],
                   single_flavors: [],
                   active: true,
-                  is_promotion: false,
                   position: products.length,
                 })
               }
@@ -971,15 +970,6 @@ function PainelConteudo({ password }: { password: string }) {
                   setEditing({ ...editing, price: e.target.value === "" ? null : Number(e.target.value) })
                 }
               />
-
-              <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0", fontSize: "0.9rem" }}>
-                <input
-                  type="checkbox"
-                  checked={editing.is_promotion ?? false}
-                  onChange={(e) => setEditing({ ...editing, is_promotion: e.target.checked })}
-                />
-                Produto em promoção (não recebe adicional de R$ 1,00 no cartão)
-              </label>
 
               <p style={dica}>Foto</p>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
