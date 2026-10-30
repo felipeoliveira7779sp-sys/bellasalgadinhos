@@ -185,12 +185,22 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  const ehCento = (label: string) => /cento|(?:^|\D)100(?:\D|$)/i.test(label);
-  const precoUnitarioNoPagamento = (item: CartItem) =>
-    pagamento === "Cartão" && ehCento(item.sizeLabel)
-      ? item.unitPrice + 1
-      : item.unitPrice;
-  const subtotal = cart.reduce((a, i) => a + precoUnitarioNoPagamento(i) * i.qty, 0);
+  // No cartão, cobra R$ 1 por cada 100 salgados somados no carrinho.
+  // Dois meios centos (50 + 50), por exemplo, geram apenas R$ 1.
+  const unidadesSalgadosNoCarrinho = cart.reduce((total, item) => {
+    const tamanho = `${item.sizeLabel} ${item.name}`.toLowerCase();
+    const unidadesPorPacote = /meio\\s*cento|50\\s*(?:un|unidades)?/.test(tamanho)
+      ? 50
+      : /cento|100\\s*(?:un|unidades)?/.test(tamanho)
+        ? 100
+        : 0;
+    return total + unidadesPorPacote * item.qty;
+  }, 0);
+  const adicionalCartaoCentos =
+    pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
+  const precoUnitarioNoPagamento = (item: CartItem) => item.unitPrice;
+  const subtotalBase = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
+  const subtotal = subtotalBase + adicionalCartaoCentos;
   const qtdTotal = cart.reduce((a, i) => a + i.qty, 0);
 
   const horarios: string[] = (() => {
@@ -1133,6 +1143,12 @@ function Cardapio() {
               <div className="receipt-line">
                 <span>{store?.surcharge_label}</span>
                 <span>{money(sobretaxaAplicada)}</span>
+              </div>
+            ) : null}
+            {adicionalCartaoCentos > 0 ? (
+              <div className="receipt-line">
+                <span>Adicional do cartão ({Math.floor(unidadesSalgadosNoCarrinho / 100)} cento(s))</span>
+                <span>{money(adicionalCartaoCentos)}</span>
               </div>
             ) : null}
             <div className="receipt-total">
