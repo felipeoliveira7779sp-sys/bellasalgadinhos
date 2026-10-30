@@ -42,6 +42,7 @@ type CartItem = {
   name: string;
   qty: number;
   unitPrice: number;
+  isPromotion: boolean;
   sizeLabel: string;
   flavors: string[];
   singleFlavor: string;
@@ -187,7 +188,11 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  const subtotal = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
+  const precoUnitarioNoPagamento = (item: CartItem) =>
+    pagamento === "Cartão" && !item.isPromotion && /cento/i.test(item.sizeLabel)
+      ? item.unitPrice + 1
+      : item.unitPrice;
+  const subtotal = cart.reduce((a, i) => a + precoUnitarioNoPagamento(i) * i.qty, 0);
   const qtdTotal = cart.reduce((a, i) => a + i.qty, 0);
 
   const horarios: string[] = (() => {
@@ -256,6 +261,7 @@ function Cardapio() {
           name: f,
           qty: q,
           unitPrice: refriPrecos[f] ?? 0,
+          isPromotion: Boolean(open.is_promotion),
           sizeLabel: "",
           flavors: [],
           singleFlavor: "",
@@ -283,7 +289,8 @@ function Cardapio() {
         name: isSalgados ? `Salgadinhos - ${tamanhoAtual}` : open.name,
         qty,
         unitPrice,
-        sizeLabel: isSalgados ? "" : (open.sizes[sizeIdx]?.label ?? ""),
+        isPromotion: Boolean(open.is_promotion),
+        sizeLabel: isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
         singleFlavor: open.single_flavors.length > 0 ? single : "",
         choices: Object.fromEntries(effectiveChoiceGroups.map((g) => [g.title, choices[g.title] ?? ""])),
@@ -439,7 +446,7 @@ function Cardapio() {
     cart.forEach((i) => {
       txt += `• *${i.qty}x ${i.name}*`;
       if (i.sizeLabel) txt += ` (${i.sizeLabel})`;
-      txt += ` - ${money(i.unitPrice * i.qty)}\n`;
+      txt += ` - ${money(precoUnitarioNoPagamento(i) * i.qty)}\n`;
       if (i.flavors.length) txt += `   _Sabores: ${i.flavors.join(", ")}_\n`;
       if (i.singleFlavor) txt += `   _Sabor: ${i.singleFlavor}_\n`;
       const escolhas = Object.entries(i.choices);
