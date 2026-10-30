@@ -300,16 +300,18 @@ function Cardapio() {
           const categoria = data?.categories.find((cat) => cat.id === open.category_id)?.title ?? "";
           const normalizar = (valor: string) => valor
             .normalize("NFD")
-            .replace(/[\\u0300-\\u036f]/g, "")
+            .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase();
-          const tamanho = normalizar(`${tamanhoAtual} ${open.sizes[sizeIdx]?.label ?? ""} ${open.description ?? ""}`);
           const nomeCategoria = normalizar(categoria);
+          const tamanho = normalizar(`${tamanhoAtual} ${open.sizes[sizeIdx]?.label ?? ""} ${open.description ?? ""}`);
           const cadastrado = Number(open.units_base);
-          if (Number.isFinite(cadastrado) && cadastrado > 0) return cadastrado;
-          if (tamanho.includes("meio cento") || tamanho.includes("50 unidade") || /\\b50\\b/.test(tamanho)) return 50;
-          if (tamanho.includes("cento") || tamanho.includes("100 unidade") || /\\b100\\b/.test(tamanho)) return 100;
-          if (nomeCategoria.includes("meio cento")) return 50;
+
+          // A categoria específica tem prioridade: "meio cento" também contém "cento".
+          if (nomeCategoria.includes("meio cento") || nomeCategoria.includes("meio-cento")) return 50;
           if (nomeCategoria.includes("cento")) return 100;
+          if (Number.isFinite(cadastrado) && cadastrado > 0) return cadastrado;
+          if (tamanho.includes("meio cento") || tamanho.includes("meio-cento") || tamanho.includes("50 unidade") || /\b50\b/.test(tamanho)) return 50;
+          if (tamanho.includes("cento") || tamanho.includes("100 unidade") || /\b100\b/.test(tamanho)) return 100;
           return 0;
         })(),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
