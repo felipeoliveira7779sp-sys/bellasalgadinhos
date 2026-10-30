@@ -169,17 +169,35 @@ export type DadosEndereco = {
 type NominatimItem = { lat: string; lon: string };
 
 async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
-  const base = { format: "jsonv2", limit: "1", countrycodes: "br", "accept-language": "pt-BR" };
+  const base = { format: "jsonv2", limit: "3", countrycodes: "br", "accept-language": "pt-BR" };
   const estado = UF_NOMES[p.uf.toUpperCase()] ?? p.uf;
   const tentativas: URLSearchParams[] = [];
 
-  if (p.rua) {
-    if (p.numero) {
-      tentativas.push(
-        new URLSearchParams({ ...base, street: `${p.numero} ${p.rua}`, city: p.cidade, state: estado, country: "Brasil" }),
-      );
-    }
-    tentativas.push(new URLSearchParams({ ...base, street: p.rua, city: p.cidade, state: estado, country: "Brasil" }));
+  // Primeiro tenta o endereço completo em texto livre, incluindo número e bairro.
+  // Isso evita localizar apenas o centro da rua ou do bairro quando há número informado.
+  if (p.rua && p.numero) {
+    tentativas.push(
+      new URLSearchParams({
+        ...base,
+        q: `${p.numero}, ${p.rua}, ${p.bairro}, ${p.cidade}, ${estado}, Brasil`,
+        addressdetails: "1",
+      }),
+    );
+    tentativas.push(
+      new URLSearchParams({
+        ...base,
+        street: `${p.numero} ${p.rua}`,
+        city: p.cidade,
+        county: p.bairro,
+        state: estado,
+        country: "Brasil",
+        addressdetails: "1",
+      }),
+    );
+  } else if (p.rua) {
+    tentativas.push(
+      new URLSearchParams({ ...base, q: `${p.rua}, ${p.bairro}, ${p.cidade}, ${estado}, Brasil`, addressdetails: "1" }),
+    );
   }
   if (p.bairro) {
     tentativas.push(new URLSearchParams({ ...base, q: `${p.bairro}, ${p.cidade}, ${estado}, Brasil` }));
@@ -190,7 +208,11 @@ async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${tentativas[i]}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        const item = lista[0];
+        // Prefere um resultado que identifique o número da residência, quando o mapa possui esse dado.
+        const item = lista.find((candidato: any) => {
+          const endereco = candidato.address ?? {};
+          return p.numero && String(endereco.house_number ?? "") === p.numero;
+        }) ?? lista[0];
         if (item) {
           const lat = numeroValido(item.lat);
           const lon = numeroValido(item.lon);
@@ -198,7 +220,7 @@ async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
         }
       }
     } catch {
-      // tenta a próxima
+      // tenta a próxima consulta com menos detalhes
     }
     // política do Nominatim: no máximo 1 consulta por segundo
     if (i < tentativas.length - 1) await esperar(1100);
