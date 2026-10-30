@@ -185,19 +185,19 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  // Usa os rótulos reais do cardápio: "Cento (100 un)" e "Meio cento (50 un)".
-  // Conta apenas os itens de salgadinhos e acumula unidades entre produtos diferentes.
+  // Identifica apenas produtos de salgadinhos pelo nome e pelo tamanho escolhido.
+  // Aceita rótulos como "Cento (100 un)", "100 unidades", "Meio cento" e "50 un".
   const unidadesSalgadosNoCarrinho = cart.reduce((total, item) => {
-    const tamanho = String(item.sizeLabel || item.name || "").toLowerCase();
-    const unidadesPorPacote = tamanho.includes("meio cento")
+    const identificacao = `${item.name} ${item.sizeLabel}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (!identificacao.includes("salgad")) return total;
+    const unidadesPorPacote = /meio\s*cento|\b50\s*(?:un|unidades)?\b/.test(identificacao)
       ? 50
-      : tamanho.includes("cento")
+      : /\bcento\b|\b100\s*(?:un|unidades)?\b/.test(identificacao)
         ? 100
         : 0;
     return total + unidadesPorPacote * item.qty;
   }, 0);
-  const adicionalCartaoCentos =
-    pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
+  const adicionalCartaoCentos = pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
   const precoUnitarioNoPagamento = (item: CartItem) => item.unitPrice;
   const subtotalBase = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
   const subtotal = subtotalBase + adicionalCartaoCentos;
