@@ -195,6 +195,7 @@ const orderSchema = z.object({
   customer_name: z.string().trim().min(1).max(120),
   customer_phone: z.string().trim().min(1).max(40),
   order_type: z.enum(["entrega", "retirada"]),
+  order_mode: z.enum(["agora", "agendado"]).default("agora"),
   scheduled_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   scheduled_time: z.string().max(10),
   payment_method: z.string().max(40),
