@@ -362,10 +362,14 @@ function Cardapio() {
         });
         return;
       }
-      await calcular(
-        { rua: end.rua, numero, bairro: end.bairro, cidade: end.cidade, uf: end.uf, coords },
-        id,
-      );
+      // O CEP preenche o endereço, mas não calcula ainda: o cliente precisa
+      // informar o número da residência antes de calcular a rota.
+      setCalc({
+        status: "erro",
+        km: null,
+        estimada: false,
+        mensagem: 'CEP preenchido. Informe o número da residência e clique em "Calcular taxa de entrega".',
+      });
     } catch (e) {
       if (id !== calcId.current) return;
       setCalc({
