@@ -97,6 +97,7 @@ create table if not exists orders (
   customer_name text not null,
   customer_phone text not null,
   order_type text not null check (order_type in ('entrega', 'retirada')),
+  order_mode text not null default 'agora' check (order_mode in ('agora', 'agendado')),
   scheduled_date date not null,
   scheduled_time text not null,
   payment_method text not null,
@@ -113,6 +114,9 @@ create table if not exists orders (
   items jsonb not null default '[]',
   status text not null default 'novo'
 );
+alter table orders add column if not exists order_mode text not null default 'agora';
+alter table orders drop constraint if exists orders_order_mode_check;
+alter table orders add constraint orders_order_mode_check check (order_mode in ('agora', 'agendado'));
 create index if not exists idx_orders_created on orders(created_at desc);
 alter table orders enable row level security; -- sem policies: só service role
 
