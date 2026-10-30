@@ -134,6 +134,7 @@ function Cardapio() {
   const [rua, setRua] = useState("");
   const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; bairro: string; cidade: string; uf: string; label: string }[]>([]);
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const buscaRuaId = useRef(0);
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
@@ -409,9 +410,17 @@ function Cardapio() {
 
   function aoDigitarRua(valor: string) {
     setRua(valor); setSugestoesRua([]); limparCalculo();
+    const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
     if (valor.trim().length < 4) return;
-    buscaRuaTimer.current = setTimeout(async () => { try { setSugestoesRua(await buscarSugestoesRua(valor, cidade || "Rio Branco", uf || "AC")); } catch { setSugestoesRua([]); } }, 700);
+    buscaRuaTimer.current = setTimeout(async () => {
+      try {
+        const lista = await buscarSugestoesRua(valor, cidade || "Rio Branco", uf || "AC");
+        if (buscaId === buscaRuaId.current) setSugestoesRua(lista);
+      } catch {
+        if (buscaId === buscaRuaId.current) setSugestoesRua([]);
+      }
+    }, 1100);
   }
   function selecionarSugestaoRua(s: { rua: string; bairro: string; cidade: string; uf: string }) {
     setRua(s.rua); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
