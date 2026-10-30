@@ -431,7 +431,6 @@ function Cardapio() {
   async function sendOrder() {
     if (enviando) return;
     const hojeLocal = dataLocalRioBranco();
-    const pedidoHoje = dataPedido === hojeLocal;
     if (pedidoHoje && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
       alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
       return;
@@ -462,7 +461,9 @@ function Cardapio() {
     const [ano, mes, dia] = dataPedido.split("-");
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
-    txt += `📅 *Data:* ${dia}/${mes}/${ano} às ${horario}\n`;
+    txt += modoPedido === "agora"
+      ? "⏱️ *Pedido:* Para agora (prazo estimado de 40 a 70 minutos)\\n"
+      : `📅 *Agendamento:* ${dia}/${mes}/${ano} às ${horario}\\n`;
     txt += `🚚 *Tipo:* ${tipo === "entrega" ? "Entrega" : "Retirada"}\n`;
     if (tipo === "entrega") {
       txt += `📍 *Endereço:* ${rua}, Nº ${numero}${complemento ? ` - ${complemento}` : ""}\n`;
