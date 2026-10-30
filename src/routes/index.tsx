@@ -185,19 +185,15 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  // Soma os pacotes de salgados do carrinho: 50 + 50 = 100 unidades.
-  // O adicional é aplicado imediatamente ao selecionar Cartão.
+  // Usa os rótulos reais do cardápio: "Cento (100 un)" e "Meio cento (50 un)".
+  // Conta apenas os itens de salgadinhos e acumula unidades entre produtos diferentes.
   const unidadesSalgadosNoCarrinho = cart.reduce((total, item) => {
-    const tamanho = `${item.sizeLabel} ${item.name}`
-      .normalize("NFD")
-      .replace(/[\\u0300-\\u036f]/g, "")
-      .toLowerCase();
-    let unidadesPorPacote = 0;
-    if (tamanho.includes("meio cento") || /\\b50\\b/.test(tamanho)) {
-      unidadesPorPacote = 50;
-    } else if (tamanho.includes("cento") || /\\b100\\b/.test(tamanho)) {
-      unidadesPorPacote = 100;
-    }
+    const tamanho = String(item.sizeLabel || item.name || "").toLowerCase();
+    const unidadesPorPacote = tamanho.includes("meio cento")
+      ? 50
+      : tamanho.includes("cento")
+        ? 100
+        : 0;
     return total + unidadesPorPacote * item.qty;
   }, 0);
   const adicionalCartaoCentos =
