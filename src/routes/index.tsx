@@ -42,7 +42,6 @@ type CartItem = {
   name: string;
   qty: number;
   unitPrice: number;
-  isPromotion: boolean;
   sizeLabel: string;
   flavors: string[];
   singleFlavor: string;
@@ -189,7 +188,7 @@ function Cardapio() {
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
   const precoUnitarioNoPagamento = (item: CartItem) =>
-    pagamento === "Cartão" && !item.isPromotion && /cento/i.test(item.sizeLabel)
+    pagamento === "Cartão" && /cento/i.test(item.sizeLabel)
       ? item.unitPrice + 1
       : item.unitPrice;
   const subtotal = cart.reduce((a, i) => a + precoUnitarioNoPagamento(i) * i.qty, 0);
@@ -261,7 +260,6 @@ function Cardapio() {
           name: f,
           qty: q,
           unitPrice: refriPrecos[f] ?? 0,
-          isPromotion: Boolean(open.is_promotion),
           sizeLabel: "",
           flavors: [],
           singleFlavor: "",
@@ -289,7 +287,6 @@ function Cardapio() {
         name: isSalgados ? `Salgadinhos - ${tamanhoAtual}` : open.name,
         qty,
         unitPrice,
-        isPromotion: Boolean(open.is_promotion),
         sizeLabel: isSalgados ? tamanhoAtual : (open.sizes[sizeIdx]?.label ?? ""),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
         singleFlavor: open.single_flavors.length > 0 ? single : "",
