@@ -282,20 +282,23 @@ function distanciaLinhaReta(a: CoordenadaGeo, b: CoordenadaGeo) {
 
 type OsrmResp = { routes?: { distance?: number }[] };
 
-// Tenta a distância real de carro (OSRM). Se o serviço falhar, usa a
-// linha reta x 1,3 (aproximação de rota urbana) e marca como estimada.
+// Solicita rotas alternativas e escolhe a menor distância viável,
+// evitando depender apenas da primeira rota recomendada pelo serviço.
 export async function distanciaRota(
   origem: CoordenadaGeo,
   destino: CoordenadaGeo,
 ): Promise<{ km: number; estimada: boolean }> {
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${origem.lon},${origem.lat};${destino.lon},${destino.lat}?overview=false`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${origem.lon},${origem.lat};${destino.lon},${destino.lat}?overview=false&alternatives=true`;
     const r = await fetchComTimeout(url, 7000);
     if (r.ok) {
       const d = (await r.json()) as OsrmResp;
-      const metros = d.routes?.[0]?.distance;
-      if (typeof metros === "number" && Number.isFinite(metros)) {
-        return { km: arredondar1(metros / 1000), estimada: false };
+      const distancias = (d.routes ?? [])
+        .map((rota) => rota.distance)
+        .filter((metros): metros is number => typeof metros === "number" && Number.isFinite(metros) && metros >= 0);
+      const menorDistancia = distancias.length ? Math.min(...distancias) : null;
+      if (menorDistancia !== null) {
+        return { km: arredondar1(menorDistancia / 1000), estimada: false };
       }
     }
   } catch {
