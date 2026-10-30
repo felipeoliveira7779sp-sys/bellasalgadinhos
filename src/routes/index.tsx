@@ -185,7 +185,7 @@ function Cardapio() {
   const sobretaxaAplicada = frete ? sobretaxa : 0;
   const taxaTotal = frete ? frete.taxa + sobretaxaAplicada : 0;
 
-  const ehCento = (label: string) => /cento|(?:^|\\D)100(?:\\D|$)/i.test(label);
+  const ehCento = (label: string) => /cento|(?:^|\D)100(?:\D|$)/i.test(label);
   const precoUnitarioNoPagamento = (item: CartItem) =>
     pagamento === "Cartão" && ehCento(item.sizeLabel)
       ? item.unitPrice + 1
