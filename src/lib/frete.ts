@@ -14,14 +14,14 @@ export type FaixaFrete = { minKm: number; maxKm: number; base: number; retorno: 
 // (igual ao da faixa seguinte). Nas demais faixas retorno = base x 1,5.
 export const TABELA_FRETE: FaixaFrete[] = [
   { minKm: 0, maxKm: 1, base: 6.0, retorno: 7.8 },
-  { minKm: 1, maxKm: 2, base: 7.0, retorno: 10.5 },
-  { minKm: 2, maxKm: 3.5, base: 8.0, retorno: 12.0 },
-  { minKm: 3.5, maxKm: 5.5, base: 10.0, retorno: 15.0 },
-  { minKm: 5.5, maxKm: 7.0, base: 11.0, retorno: 16.5 },
-  { minKm: 7.0, maxKm: 9.0, base: 13.0, retorno: 19.5 },
-  { minKm: 9.0, maxKm: 12.0, base: 15.0, retorno: 22.5 },
-  { minKm: 12.0, maxKm: 15.0, base: 17.0, retorno: 25.5 },
-  { minKm: 15.0, maxKm: 17.0, base: 19.0, retorno: 28.5 },
+  { minKm: 1, maxKm: 2, base: 7.0, retorno: 7.8 },
+  { minKm: 2, maxKm: 3.5, base: 8.0, retorno: 7.8 },
+  { minKm: 3.5, maxKm: 5.5, base: 10.0, retorno: 7.8 },
+  { minKm: 5.5, maxKm: 7.0, base: 11.0, retorno: 7.8 },
+  { minKm: 7.0, maxKm: 9.0, base: 13.0, retorno: 7.8 },
+  { minKm: 9.0, maxKm: 12.0, base: 15.0, retorno: 7.8 },
+  { minKm: 12.0, maxKm: 15.0, base: 17.0, retorno: 7.8 },
+  { minKm: 15.0, maxKm: 17.0, base: 19.0, retorno: 7.8 },
 ];
 
 // Acima disso a loja não entrega
