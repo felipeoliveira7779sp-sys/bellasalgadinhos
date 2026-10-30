@@ -144,10 +144,9 @@ function Cardapio() {
   const store = data?.store ?? null;
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
   const whatsLoja = "556892505137"; // WhatsApp da loja informado pelo proprietário
-  const lojaCoords: CoordenadaGeo | null =
-    store && store.store_lat !== null && store.store_lon !== null
-      ? { lat: store.store_lat, lon: store.store_lon }
-      : null;
+  // Coordenadas confirmadas pela responsável da loja (Travessa São Sebastião, 69).
+  // Mantidas como origem do cálculo até a configuração persistida da loja ser atualizada.
+  const lojaCoords: CoordenadaGeo = { lat: -9.9678, lon: -67.8285 };
 
   // Salgadinhos e refrigerantes agrupados em um único card cada
   const grupos = useMemo(() => {
