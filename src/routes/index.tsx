@@ -477,7 +477,7 @@ function Cardapio() {
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
       ? "⏱️ *Pedido:* Para agora (prazo estimado de 40 a 70 minutos)\n"
-      : `📅 *Agendamento:* ${dia}/${mes}/${ano} às ${horario}\\n`;
+      : `📅 *Agendamento:* ${dia}/${mes}/${ano} às ${horario}\n`;
     txt += `🚚 *Tipo:* ${tipo === "entrega" ? "Entrega" : "Retirada"}\n`;
     if (tipo === "entrega") {
       txt += `📍 *Endereço:* ${rua}, Nº ${numero}${complemento ? ` - ${complemento}` : ""}\n`;
