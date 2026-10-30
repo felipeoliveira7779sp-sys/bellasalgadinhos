@@ -118,6 +118,7 @@ const productSchema = z.object({
   allow_assorted: z.boolean(),
   choice_groups: z.array(z.object({ title: z.string(), options: z.array(z.string()) })),
   active: z.boolean(),
+  is_promotion: z.boolean().default(false),
   position: z.number(),
 });
 
