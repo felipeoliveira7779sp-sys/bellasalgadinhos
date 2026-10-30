@@ -382,8 +382,10 @@ function Cardapio() {
 
   async function sendOrder() {
     if (enviando) return;
-    if (!lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
-      alert("A loja está fechada no momento. Tente novamente no horário de funcionamento.");
+    const hojeLocal = new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" });
+    const pedidoHoje = dataPedido === hojeLocal;
+    if (pedidoHoje && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
+      alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
       return;
     }
     if (!nome || !tel || !dataPedido || !horario || !pagamento) {
@@ -1118,9 +1120,9 @@ function Cardapio() {
             </div>
           </div>
 
-          <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || !aberto}>
-            {!aberto
-              ? "Loja fechada no momento"
+          <button className="btn-whatsapp" onClick={() => void sendOrder()} disabled={enviando || (!aberto && dataPedido === new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" }))}>
+            {!aberto && dataPedido === new Date().toLocaleDateString("en-CA", { timeZone: "America/Rio_Branco" })
+              ? "Loja fechada para pedidos de hoje"
               : enviando
                 ? "Registrando pedido..."
                 : "Enviar Pedido no WhatsApp"}
