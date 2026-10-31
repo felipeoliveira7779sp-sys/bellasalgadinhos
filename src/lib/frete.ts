@@ -189,7 +189,7 @@ function normalizarTexto(v: string) {
   return v.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
+async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
   const base = { format: "jsonv2", limit: "5", countrycodes: "br", "accept-language": "pt-BR", addressdetails: "1" };
   const estado = UF_NOMES[p.uf.toUpperCase()] ?? p.uf;
   const tentativas: URLSearchParams[] = [];
@@ -228,38 +228,83 @@ async function geocodificar(p: DadosEndereco): Promise<CoordenadaGeo | null> {
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
         const ruaAlvo = normalizarTexto(rua);
+        const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista
           .map((item) => {
             const endereco = item.address ?? {};
             const ruaEncontrada = normalizarTexto(endereco.road ?? endereco.pedestrian ?? "");
             const numeroEncontrado = String(endereco.house_number ?? "").trim();
             const bairroEncontrado = normalizarTexto(endereco.suburb ?? endereco.neighbourhood ?? "");
-            const ruaConfere = !ruaAlvo || !ruaEncontrada || ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada);
-            const numeroConfere = !numero || numeroEncontrado === numero;
-            const bairroAlvo = normalizarTexto(bairro);
-            const bairroConfere = !bairroAlvo || !bairroEncontrado || bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+            const ruaConfere = !!ruaAlvo && !!ruaEncontrada &&
+              (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
+            const bairroConfere = !bairroAlvo || !bairroEncontrado ||
+              bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+            const numeroConfere = !!numero && numeroEncontrado === numero;
             const lat = numeroValido(item.lat);
             const lon = numeroValido(item.lon);
-            return { item, lat, lon, pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) + (item.class === "place" ? 0 : 1) };
+            return { lat, lon, ruaConfere, bairroConfere, numeroConfere,
+              pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
+                (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
           })
-          .filter((c) => c.lat !== null && c.lon !== null && c.pontos >= (numero ? 8 : 4))
+          .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere && c.numeroConfere && c.bairroConfere)
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
-          return { lat: melhor.lat, lon: melhor.lon };
+          return { coords: { lat: melhor.lat, lon: melhor.lon }, estimada: false };
         }
       }
     } catch {
-      // tenta a segunda consulta, ainda usando rua e número
+      // tenta a próxima consulta
     }
     if (i < tentativas.length - 1) await esperar(1100);
   }
 
-  // Sem número exato no mapa, é mais seguro pedir ajuste do endereço do que
-  // calcular a taxa usando o centro do bairro e cobrar um valor possivelmente errado.
+  // Alternativa: quando o número não está cadastrado, usa um ponto da própria
+  // rua no bairro informado. Nunca aceita apenas o centro do bairro/cidade.
+  if (rua && numero) {
+    await esperar(1100);
+    try {
+      const params = new URLSearchParams({
+        ...base,
+        street: rua,
+        city: cidade,
+        state: estado,
+        country: "Brasil",
+      });
+      const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${params}`);
+      if (r.ok) {
+        const lista = (await r.json()) as NominatimItem[];
+        const ruaAlvo = normalizarTexto(rua);
+        const bairroAlvo = normalizarTexto(bairro);
+        const candidatos = lista.map((item) => {
+          const a = item.address ?? {};
+          const ruaEncontrada = normalizarTexto(a.road ?? a.pedestrian ?? "");
+          const bairroEncontrado = normalizarTexto(a.suburb ?? a.neighbourhood ?? "");
+          const lat = numeroValido(item.lat);
+          const lon = numeroValido(item.lon);
+          const ruaConfere = !!ruaEncontrada &&
+            (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
+          const bairroConfere = !bairroAlvo || !bairroEncontrado ||
+            bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+          return { lat, lon, ruaConfere, bairroConfere,
+            pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
+              (item.class === "highway" ? 2 : 0) };
+        }).filter((item) => item.lat !== null && item.lon !== null &&
+          item.ruaConfere && item.bairroConfere).sort((a, b) => b.pontos - a.pontos);
+        const melhor = candidatos[0];
+        if (melhor?.lat !== null && melhor?.lat !== undefined &&
+            melhor?.lon !== null && melhor?.lon !== undefined) {
+          return { coords: { lat: melhor.lat, lon: melhor.lon }, estimada: true };
+        }
+      }
+    } catch {
+      // mantém a mensagem orientando o cliente a conferir o endereço
+    }
+  }
+
   throw new Error(
     numero
-      ? "Não encontrei o número desse endereço com precisão no mapa. Confira rua e número ou entre em contato com a loja."
+      ? "Não encontrei o número exato nem um ponto confiável dessa rua no mapa. Confira o endereço ou entre em contato com a loja."
       : "Não consegui localizar essa rua com precisão. Confira o endereço e tente novamente.",
   );
 }
@@ -313,9 +358,11 @@ export async function buscarSugestoesRua(
   });
 }
 
-export async function resolverCoordenadas(p: DadosEndereco): Promise<CoordenadaGeo | null> {
+export async function resolverCoordenadas(
+  p: DadosEndereco,
+): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
   // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
-  // Sempre priorizar a geocodificação do endereço digitado.
+  // Sempre priorizar o número exato; a rua é apenas alternativa explicitamente estimada.
   return geocodificar(p);
 }
 
@@ -362,5 +409,6 @@ export async function calcularKmEntrega(
 ): Promise<{ km: number; estimada: boolean }> {
   const destino = await resolverCoordenadas(p);
   if (!destino) throw new Error("Não consegui localizar esse endereço no mapa.");
-  return distanciaRota(origem, destino);
+  const rota = await distanciaRota(origem, destino.coords);
+  return { ...rota, estimada: destino.estimada || rota.estimada };
 }
