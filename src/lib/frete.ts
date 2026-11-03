@@ -190,7 +190,7 @@ type NominatimItem = {
 };
 
 function normalizarTexto(v: string) {
-  return v.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
