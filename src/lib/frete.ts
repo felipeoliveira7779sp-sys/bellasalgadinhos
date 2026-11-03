@@ -173,8 +173,10 @@ type NominatimItem = {
     house_number?: string;
     road?: string;
     pedestrian?: string;
+    footway?: string;
     suburb?: string;
     neighbourhood?: string;
+    quarter?: string;
     city?: string;
     town?: string;
     municipality?: string;
