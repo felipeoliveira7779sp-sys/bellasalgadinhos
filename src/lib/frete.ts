@@ -354,7 +354,9 @@ export async function buscarSugestoesRua(
     const chave = normalizarTexto(label);
     if (vistos.has(chave)) return [];
     vistos.add(chave);
-    const lat = numeroValido(item.lat);\n    const lon = numeroValido(item.lon);\n    return [{ rua: rua || nomeLocal, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label, lat, lon }];
+    const lat = numeroValido(item.lat);
+    const lon = numeroValido(item.lon);
+    return [{ rua: rua || nomeLocal, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label, lat, lon }];
   });
 }
 
