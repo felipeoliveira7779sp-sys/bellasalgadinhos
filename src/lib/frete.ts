@@ -181,6 +181,8 @@ type NominatimItem = {
     state?: string;
   };
   importance?: number;
+  name?: string;
+  display_name?: string;
   type?: string;
   class?: string;
 };
@@ -312,26 +314,28 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
 
 export type SugestaoRua = {
   rua: string;
+  numero: string;
   bairro: string;
   cidade: string;
   uf: string;
   label: string;
+  lat: number | null;
+  lon: number | null;
 };
 
-// Busca sugestões de logradouro sem exigir CEP. A seleção só preenche os campos;
-// o cálculo do frete continua geocodificando rua + número para evitar taxa aproximada.
+// Pesquisa ruas e também pontos de interesse (lojas, órgãos e estabelecimentos).
 export async function buscarSugestoesRua(
   texto: string,
   cidade = "Rio Branco",
   uf = "AC",
 ): Promise<SugestaoRua[]> {
   const termo = texto.trim();
-  if (termo.length < 4) return [];
+  if (termo.length < 3) return [];
   const estado = UF_NOMES[uf.toUpperCase()] ?? uf;
   const params = new URLSearchParams({
     format: "jsonv2",
     addressdetails: "1",
-    limit: "6",
+    limit: "8",
     countrycodes: "br",
     "accept-language": "pt-BR",
     q: `${termo}, ${cidade}, ${estado}, Brasil`,
@@ -345,18 +349,35 @@ export async function buscarSugestoesRua(
   const vistos = new Set<string>();
   return items.flatMap((item) => {
     const a = item.address ?? {};
-    const rua = a.road ?? a.pedestrian ?? "";
-    if (!rua) return [];
-    const bairro = a.suburb ?? a.neighbourhood ?? "";
+    const rua = a.road ?? a.pedestrian ?? a.footway ?? "";
+    const nomeLocal = item.name?.trim() ?? "";
+    const nomeExibicao = nomeLocal || rua || item.display_name?.split(",")[0]?.trim() || "";
+    if (!rua && !nomeExibicao) return [];
+    const bairro = a.suburb ?? a.neighbourhood ?? a.quarter ?? "";
     const cidadeEncontrada = a.city ?? a.town ?? a.municipality ?? cidade;
-    const ufEncontrada = a.state ? (Object.entries(UF_NOMES).find(([, nome]) => nome === a.state)?.[0] ?? uf) : uf;
-    const label = [nomeLocal && normalizarTexto(nomeLocal) !== normalizarTexto(rua) ? nomeLocal : rua, rua && nomeLocal && normalizarTexto(nomeLocal) !== normalizarTexto(rua) ? rua : "", bairro, cidadeEncontrada, ufEncontrada].filter(Boolean).join(" - ");
+    const ufEncontrada = a.state
+      ? (Object.entries(UF_NOMES).find(([, nome]) => normalizarTexto(nome) === normalizarTexto(a.state!))?.[0] ?? uf)
+      : uf;
+    const label = [
+      nomeExibicao,
+      rua && normalizarTexto(nomeExibicao) !== normalizarTexto(rua) ? rua : "",
+      bairro,
+      cidadeEncontrada,
+      ufEncontrada,
+    ].filter(Boolean).join(" - ");
     const chave = normalizarTexto(label);
     if (vistos.has(chave)) return [];
     vistos.add(chave);
-    const lat = numeroValido(item.lat);
-    const lon = numeroValido(item.lon);
-    return [{ rua: rua || nomeLocal, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label, lat, lon }];
+    return [{
+      rua: rua || nomeExibicao,
+      numero: a.house_number ?? "",
+      bairro,
+      cidade: cidadeEncontrada,
+      uf: ufEncontrada,
+      label,
+      lat: numeroValido(item.lat),
+      lon: numeroValido(item.lon),
+    }];
   });
 }
 
