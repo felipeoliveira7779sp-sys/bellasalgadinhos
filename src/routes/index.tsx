@@ -157,6 +157,22 @@ function Cardapio() {
     return agruparCardapio(data.categories, data.products);
   }, [data]);
 
+  useEffect(() => {
+    if (!grupos.length) return;
+    setCategoriaAtiva((atual) => grupos.some((g) => g.id === atual) ? atual : grupos[0].id);
+    const atualizar = () => {
+      let atual = grupos[0].id;
+      for (const grupo of grupos) {
+        const secao = document.getElementById(`sec-${grupo.id}`);
+        if (secao && secao.getBoundingClientRect().top <= 190) atual = grupo.id;
+      }
+      setCategoriaAtiva(atual);
+    };
+    window.addEventListener("scroll", atualizar, { passive: true });
+    atualizar();
+    return () => window.removeEventListener("scroll", atualizar);
+  }, [grupos]);
+
   const isRefri = open?._modo === "refri";
   const isSalgados = open?._modo === "salgados";
   const refriPrecos = open?._refriPrecos ?? {};
@@ -482,7 +498,9 @@ function Cardapio() {
 
     const dataEfetiva = modoPedido === "agora" ? hojeLocal : dataPedido;
     const horarioEfetivo = modoPedido === "agora" ? "40-70 min" : horario;
-    const [ano, mes, dia] = dataEfetiva.split("-");\n    const enderecoCompleto = `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""}, ${bairro}, ${cidade}${uf ? ` - ${uf}` : ""}, Brasil`;\n    const linkMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
+    const [ano, mes, dia] = dataEfetiva.split("-");
+    const enderecoCompleto = `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""}, ${bairro}, ${cidade}${uf ? ` - ${uf}` : ""}, Brasil`;
+    const linkMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
@@ -492,6 +510,7 @@ function Cardapio() {
     if (tipo === "entrega") {
       txt += `📍 *Endereço:* ${rua}, Nº ${numero}${complemento ? ` - ${complemento}` : ""}\n`;
       txt += `🏘️ *Bairro:* ${bairro} — ${cidade}${uf ? `/${uf}` : ""}${cep ? ` — CEP ${cep}` : ""}\n`;
+      txt += `🗺️ *Localização:* ${linkMapa}\n`;
       txt += `📏 *Distância:* ~${fmtKm(kmAtual ?? 0)} km${calc.estimada ? " (estimada)" : ""}\n`;
     }
     txt += `\n📦 *ITENS:*\n`;
