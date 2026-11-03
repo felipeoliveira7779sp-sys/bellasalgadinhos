@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
-import { createOrder } from "@/lib/menu.functions";
+import { createOrder, buscarLocaisGoogle, detalhesLocalGoogle } from "@/lib/menu.functions";
 import { agruparCardapio, precoSalgado, type ProdutoAgrupado } from "@/lib/agrupar-cardapio";
 import {
   LIMITE_KM,
@@ -97,6 +97,8 @@ function Cardapio() {
     refetchInterval: 60_000,
   });
   const doCreateOrder = useServerFn(createOrder);
+  const doBuscarLocaisGoogle = useServerFn(buscarLocaisGoogle);
+  const doDetalhesLocalGoogle = useServerFn(detalhesLocalGoogle);
   const [enviando, setEnviando] = useState(false);
 
   // Produto aberto
@@ -132,7 +134,8 @@ function Cardapio() {
   // Endereço de entrega
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
-  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; numero: string; bairro: string; cidade: string; uf: string; label: string; lat: number | null; lon: number | null }[]>([]);
+  const [sugestoesRua, setSugestoesRua] = useState<{ placeId: string; label: string }[]>([]);
+  const [buscandoLocal, setBuscandoLocal] = useState(false);
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buscaRuaId = useRef(0);
   const [numero, setNumero] = useState("");
@@ -426,23 +429,39 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
-    setRua(valor); setSugestoesRua([]); limparCalculo();
+    setRua(valor); setSugestoesRua([]); setCoordsCliente(null); limparCalculo();
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
     if (valor.trim().length < 3) return;
     buscaRuaTimer.current = setTimeout(async () => {
+      setBuscandoLocal(true);
       try {
-        const lista = await buscarSugestoesRua(valor, cidade || "Rio Branco", uf || "AC");
+        const lista = await doBuscarLocaisGoogle({ data: { input: valor.trim() } });
         if (buscaId === buscaRuaId.current) setSugestoesRua(lista);
       } catch {
         if (buscaId === buscaRuaId.current) setSugestoesRua([]);
+      } finally {
+        if (buscaId === buscaRuaId.current) setBuscandoLocal(false);
       }
-    }, 1100);
+    }, 500);
   }
-  function selecionarSugestaoRua(s: { rua: string; numero: string; bairro: string; cidade: string; uf: string; lat?: number | null; lon?: number | null }) {
-    setRua(s.rua); if (s.numero) setNumero(s.numero); else setNumero("s/n"); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
-    setCoordsCliente(s.lat != null && s.lon != null ? { lat: s.lat, lon: s.lon } : null);
-    setSugestoesRua([]); calcId.current++; setCalc(CALC_VAZIO);
+
+  async function selecionarSugestaoRua(s: { placeId: string; label: string }) {
+    setSugestoesRua([]); setBuscandoLocal(true);
+    try {
+      const local = await doDetalhesLocalGoogle({ data: { placeId: s.placeId } });
+      setRua(local.rua || local.nome || local.endereco || s.label);
+      setNumero(local.numero || "s/n");
+      if (local.bairro) setBairro(local.bairro);
+      if (local.cidade) setCidade(local.cidade);
+      if (local.uf) setUf(local.uf);
+      setCoordsCliente(local.lat != null && local.lon != null ? { lat: local.lat, lon: local.lon } : null);
+      calcId.current++; setCalc(CALC_VAZIO);
+    } catch (e) {
+      setCalc({ status: "erro", km: null, estimada: false, mensagem: e instanceof Error ? e.message : "Não consegui carregar esse local." });
+    } finally {
+      setBuscandoLocal(false);
+    }
   }
 
   function aoDigitarCep(valor: string) {
@@ -1038,7 +1057,7 @@ function Cardapio() {
               </div>
               {sugestoesRua.length > 0 ? (
                 <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
-                  {sugestoesRua.map((s, i) => <button key={`${s.label}-${i}`} type="button" onClick={() => selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
+                  {sugestoesRua.map((s) => <button key={s.placeId} type="button" onClick={() => void selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
                 </div>
               ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
