@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
 import { createOrder } from "@/lib/menu.functions";
@@ -132,7 +132,7 @@ function Cardapio() {
   // Endereço de entrega
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
-  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; bairro: string; cidade: string; uf: string; label: string }[]>([]);
+  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; bairro: string; cidade: string; uf: string; label: string; lat: number | null; lon: number | null }[]>([]);
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buscaRuaId = useRef(0);
   const [numero, setNumero] = useState("");
@@ -143,6 +143,7 @@ function Cardapio() {
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
   const [calc, setCalc] = useState<CalcFrete>(CALC_VAZIO);
   const calcId = useRef(0);
+  const [categoriaAtiva, setCategoriaAtiva] = useState("");
 
   const store = data?.store ?? null;
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
@@ -481,7 +482,7 @@ function Cardapio() {
 
     const dataEfetiva = modoPedido === "agora" ? hojeLocal : dataPedido;
     const horarioEfetivo = modoPedido === "agora" ? "40-70 min" : horario;
-    const [ano, mes, dia] = dataEfetiva.split("-");
+    const [ano, mes, dia] = dataEfetiva.split("-");\n    const enderecoCompleto = `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""}, ${bairro}, ${cidade}${uf ? ` - ${uf}` : ""}, Brasil`;\n    const linkMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
@@ -590,7 +591,7 @@ function Cardapio() {
           {grupos.map((c, i) => (
             <button
               key={c.id}
-              className={`nav-item ${i === 0 ? "active" : ""}`}
+              className={`nav-item ${c.id === categoriaAtiva ? "active" : ""}`}
               onClick={() =>
                 document.getElementById(`sec-${c.id}`)?.scrollIntoView({ behavior: "smooth" })
               }
@@ -1010,7 +1011,7 @@ function Cardapio() {
               <div className="input-group">
                 <input
                   className="input-control"
-                  placeholder="Rua / Avenida"
+                  placeholder="Rua, avenida ou nome do estabelecimento"
                   value={rua}
                   onChange={(e) => aoDigitarRua(e.target.value)}
                 />
