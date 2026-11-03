@@ -1058,9 +1058,12 @@ function Cardapio() {
                   onChange={(e) => aoDigitarRua(e.target.value)}
                 />
               </div>
+              {buscandoLocal ? <p style={{ fontSize: 12, color: "#666", margin: "0 0 8px" }}>Pesquisando no Google Maps...</p> : null}
+              {erroBuscaLocal ? <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 8px" }}>{erroBuscaLocal}</p> : null}
               {sugestoesRua.length > 0 ? (
                 <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
                   {sugestoesRua.map((s) => <button key={s.placeId} type="button" onClick={() => void selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
+                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Powered by Google</div>
                 </div>
               ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
