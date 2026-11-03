@@ -20,75 +20,75 @@ async function admin() {
 }
 
 
-const googlePlaceSearchSchema = z.object({ input: z.string().trim().min(3).max(180) });
+const photonSearchSchema = z.object({ input: z.string().trim().min(3).max(180) });
 
-export const buscarLocaisGoogle = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => googlePlaceSearchSchema.parse(d))
+const ufPorEstado: Record<string, string> = {
+  Acre: "AC", Alagoas: "AL", Amapá: "AP", Amazonas: "AM", Bahia: "BA",
+  Ceará: "CE", "Distrito Federal": "DF", "Espírito Santo": "ES", Goiás: "GO",
+  Maranhão: "MA", "Mato Grosso": "MT", "Mato Grosso do Sul": "MS",
+  "Minas Gerais": "MG", Pará: "PA", Paraíba: "PB", Paraná: "PR",
+  Pernambuco: "PE", Piauí: "PI", "Rio de Janeiro": "RJ",
+  "Rio Grande do Norte": "RN", "Rio Grande do Sul": "RS", Rondônia: "RO",
+  Roraima: "RR", "Santa Catarina": "SC", "São Paulo": "SP", Sergipe: "SE",
+  Tocantins: "TO",
+};
+
+export const buscarLocaisGratuitos = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => photonSearchSchema.parse(d))
   .handler(async ({ data }) => {
-    const apiKey = process.env["GOOGLE_MAPS_API_KEY"];
-    if (!apiKey) throw new Error("Busca Google ainda não configurada. Informe a chave GOOGLE_MAPS_API_KEY nas variáveis do servidor.");
-    const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
-      },
-      body: JSON.stringify({
-        input: data.input,
-        includedRegionCodes: ["br"],
-        languageCode: "pt-BR",
-        regionCode: "BR",
-        locationBias: {
-          circle: {
-            center: { latitude: -9.975, longitude: -67.824 },
-            radius: 30000,
-          },
-        },
-      }),
+    const url = new URL("https://photon.komoot.io/api/");
+    url.searchParams.set("q", data.input);
+    url.searchParams.set("lat", "-9.975");
+    url.searchParams.set("lon", "-67.824");
+    url.searchParams.set("zoom", "12");
+    url.searchParams.set("limit", "8");
+    url.searchParams.set("lang", "pt");
+    url.searchParams.set("countrycode", "BR");
+
+    const response = await fetch(url, {
+      headers: { Accept: "application/geo+json" },
+      signal: AbortSignal.timeout(8000),
     });
-    if (!response.ok) throw new Error("Não foi possível pesquisar no Google Maps agora.");
+    if (!response.ok) throw new Error("A busca gratuita de locais está indisponível no momento.");
     const json = await response.json() as {
-      suggestions?: { placePrediction?: { placeId?: string; text?: { text?: string } } }[];
+      features?: {
+        properties?: {
+          name?: string; street?: string; housenumber?: string; district?: string;
+          suburb?: string; neighbourhood?: string; locality?: string; city?: string;
+          county?: string; state?: string; countrycode?: string; osm_type?: string;
+          osm_id?: number | string;
+        };
+        geometry?: { coordinates?: number[] };
+      }[];
     };
-    return (json.suggestions ?? []).flatMap((s) => {
-      const p = s.placePrediction;
-      return p?.placeId && p.text?.text ? [{ placeId: p.placeId, label: p.text.text }] : [];
-    });
-  });
 
-const googlePlaceDetailsSchema = z.object({ placeId: z.string().min(1).max(200) });
-
-export const detalhesLocalGoogle = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => googlePlaceDetailsSchema.parse(d))
-  .handler(async ({ data }) => {
-    const apiKey = process.env["GOOGLE_MAPS_API_KEY"];
-    if (!apiKey) throw new Error("Busca Google ainda não configurada.");
-    const response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(data.placeId)}`, {
-      headers: {
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents",
-      },
+    return (json.features ?? []).flatMap((feature, index) => {
+      const p = feature.properties ?? {};
+      const coordinates = feature.geometry?.coordinates;
+      if (p.countrycode && p.countrycode.toUpperCase() !== "BR") return [];
+      if (!coordinates || coordinates.length < 2) return [];
+      const estado = p.state ?? "";
+      const uf = ufPorEstado[estado] ?? (/^[A-Z]{2}$/.test(estado) ? estado : "");
+      const nome = p.name ?? "";
+      const rua = p.street ?? (p.osm_key === "highway" ? nome : "");
+      const bairro = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
+      const cidade = p.city ?? p.county ?? "";
+      const partes = [nome, rua && rua !== nome ? rua : "", p.housenumber, bairro, cidade, uf || estado]
+        .filter((parte, i, all) => Boolean(parte) && all.indexOf(parte) === i);
+      const label = partes.join(", ") || nome || rua;
+      if (!label) return [];
+      return [{
+        id: `${p.osm_type ?? "osm"}-${p.osm_id ?? index}`,
+        label,
+        rua: rua || nome,
+        numero: p.housenumber ?? "",
+        bairro,
+        cidade,
+        uf,
+        lat: coordinates[1],
+        lon: coordinates[0],
+      }];
     });
-    if (!response.ok) throw new Error("Não foi possível carregar o endereço selecionado.");
-    const p = await response.json() as {
-      displayName?: { text?: string };
-      formattedAddress?: string;
-      location?: { latitude?: number; longitude?: number };
-      addressComponents?: { longText?: string; shortText?: string; types?: string[] }[];
-    };
-    const component = (type: string) => p.addressComponents?.find((c) => c.types?.includes(type));
-    return {
-      nome: p.displayName?.text ?? "",
-      endereco: p.formattedAddress ?? "",
-      rua: component("route")?.longText ?? "",
-      numero: component("street_number")?.longText ?? "",
-      bairro: component("sublocality_level_1")?.longText ?? component("neighborhood")?.longText ?? "",
-      cidade: component("locality")?.longText ?? component("administrative_area_level_2")?.longText ?? "",
-      uf: component("administrative_area_level_1")?.shortText ?? "AC",
-      lat: p.location?.latitude ?? null,
-      lon: p.location?.longitude ?? null,
-    };
   });
 
 export const loginAdmin = createServerFn({ method: "POST" })
