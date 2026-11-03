@@ -11,7 +11,6 @@ import {
   buscarCep,
   calcularKmEntrega,
   calcularTaxaEntrega,
-  buscarSugestoesRua,
   formatarCep,
   limparCep,
   type CoordenadaGeo,
@@ -136,6 +135,7 @@ function Cardapio() {
   const [rua, setRua] = useState("");
   const [sugestoesRua, setSugestoesRua] = useState<{ placeId: string; label: string }[]>([]);
   const [buscandoLocal, setBuscandoLocal] = useState(false);
+  const [erroBuscaLocal, setErroBuscaLocal] = useState("");
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buscaRuaId = useRef(0);
   const [numero, setNumero] = useState("");
@@ -429,7 +429,7 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
-    setRua(valor); setSugestoesRua([]); setCoordsCliente(null); limparCalculo();
+    setRua(valor); setSugestoesRua([]); setErroBuscaLocal(""); setCoordsCliente(null); limparCalculo();
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
     if (valor.trim().length < 3) return;
@@ -438,8 +438,11 @@ function Cardapio() {
       try {
         const lista = await doBuscarLocaisGoogle({ data: { input: valor.trim() } });
         if (buscaId === buscaRuaId.current) setSugestoesRua(lista);
-      } catch {
-        if (buscaId === buscaRuaId.current) setSugestoesRua([]);
+      } catch (e) {
+        if (buscaId === buscaRuaId.current) {
+          setSugestoesRua([]);
+          setErroBuscaLocal(e instanceof Error ? e.message : "Não foi possível pesquisar o local.");
+        }
       } finally {
         if (buscaId === buscaRuaId.current) setBuscandoLocal(false);
       }
