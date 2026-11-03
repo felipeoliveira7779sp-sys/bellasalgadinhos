@@ -19,6 +19,78 @@ async function admin() {
   return getSupabaseAdmin();
 }
 
+
+const googlePlaceSearchSchema = z.object({ input: z.string().trim().min(3).max(180) });
+
+export const buscarLocaisGoogle = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => googlePlaceSearchSchema.parse(d))
+  .handler(async ({ data }) => {
+    const apiKey = process.env["GOOGLE_MAPS_API_KEY"];
+    if (!apiKey) throw new Error("Busca Google ainda não configurada. Informe a chave GOOGLE_MAPS_API_KEY nas variáveis do servidor.");
+    const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+      },
+      body: JSON.stringify({
+        input: data.input,
+        includedRegionCodes: ["br"],
+        languageCode: "pt-BR",
+        regionCode: "BR",
+        locationBias: {
+          circle: {
+            center: { latitude: -9.975, longitude: -67.824 },
+            radius: 30000,
+          },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error("Não foi possível pesquisar no Google Maps agora.");
+    const json = await response.json() as {
+      suggestions?: { placePrediction?: { placeId?: string; text?: { text?: string } } }[];
+    };
+    return (json.suggestions ?? []).flatMap((s) => {
+      const p = s.placePrediction;
+      return p?.placeId && p.text?.text ? [{ placeId: p.placeId, label: p.text.text }] : [];
+    });
+  });
+
+const googlePlaceDetailsSchema = z.object({ placeId: z.string().min(1).max(200) });
+
+export const detalhesLocalGoogle = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => googlePlaceDetailsSchema.parse(d))
+  .handler(async ({ data }) => {
+    const apiKey = process.env["GOOGLE_MAPS_API_KEY"];
+    if (!apiKey) throw new Error("Busca Google ainda não configurada.");
+    const response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(data.placeId)}`, {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents",
+      },
+    });
+    if (!response.ok) throw new Error("Não foi possível carregar o endereço selecionado.");
+    const p = await response.json() as {
+      displayName?: { text?: string };
+      formattedAddress?: string;
+      location?: { latitude?: number; longitude?: number };
+      addressComponents?: { longText?: string; shortText?: string; types?: string[] }[];
+    };
+    const component = (type: string) => p.addressComponents?.find((c) => c.types?.includes(type));
+    return {
+      nome: p.displayName?.text ?? "",
+      endereco: p.formattedAddress ?? "",
+      rua: component("route")?.longText ?? "",
+      numero: component("street_number")?.longText ?? "",
+      bairro: component("sublocality_level_1")?.longText ?? component("neighborhood")?.longText ?? "",
+      cidade: component("locality")?.longText ?? component("administrative_area_level_2")?.longText ?? "",
+      uf: component("administrative_area_level_1")?.shortText ?? "AC",
+      lat: p.location?.latitude ?? null,
+      lon: p.location?.longitude ?? null,
+    };
+  });
+
 export const loginAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => z.object({ password: z.string() }).parse(d))
   .handler(async ({ data }) => {
