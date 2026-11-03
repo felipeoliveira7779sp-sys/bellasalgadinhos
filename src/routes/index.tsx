@@ -440,7 +440,6 @@ function Cardapio() {
         url.searchParams.set("lon", "-67.824");
         url.searchParams.set("zoom", "12");
         url.searchParams.set("limit", "8");
-        url.searchParams.set("lang", "pt");
         const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
         if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
         const dados = await resposta.json() as { features?: { properties?: { name?: string; street?: string; housenumber?: string; district?: string; suburb?: string; neighbourhood?: string; locality?: string; city?: string; county?: string; state?: string; osm_type?: string; osm_id?: number | string }; geometry?: { coordinates?: number[] } }[] };
