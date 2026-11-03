@@ -55,7 +55,7 @@ export const buscarLocaisGratuitos = createServerFn({ method: "POST" })
         properties?: {
           name?: string; street?: string; housenumber?: string; district?: string;
           suburb?: string; neighbourhood?: string; locality?: string; city?: string;
-          county?: string; state?: string; countrycode?: string; osm_type?: string;
+          county?: string; state?: string; countrycode?: string; osm_key?: string; osm_type?: string;
           osm_id?: number | string;
         };
         geometry?: { coordinates?: number[] };
