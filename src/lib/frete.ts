@@ -363,7 +363,14 @@ export async function resolverCoordenadas(
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
   // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
   // Sempre priorizar o número exato; a rua é apenas alternativa explicitamente estimada.
-  const exato = await geocodificar(p);\n  if (exato) return exato;\n  if (p.coords) return { coords: p.coords, estimada: true };\n  return null;
+  try {
+    const exato = await geocodificar(p);
+    if (exato) return exato;
+  } catch {
+    // Usa o ponto do estabelecimento selecionado como alternativa estimada.
+  }
+  if (p.coords) return { coords: p.coords, estimada: true };
+  return null;
 }
 
 function distanciaLinhaReta(a: CoordenadaGeo, b: CoordenadaGeo) {
