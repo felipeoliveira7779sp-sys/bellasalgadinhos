@@ -350,11 +350,11 @@ export async function buscarSugestoesRua(
     const bairro = a.suburb ?? a.neighbourhood ?? "";
     const cidadeEncontrada = a.city ?? a.town ?? a.municipality ?? cidade;
     const ufEncontrada = a.state ? (Object.entries(UF_NOMES).find(([, nome]) => nome === a.state)?.[0] ?? uf) : uf;
-    const label = [rua, bairro, cidadeEncontrada, ufEncontrada].filter(Boolean).join(" - ");
+    const label = [nomeLocal && normalizarTexto(nomeLocal) !== normalizarTexto(rua) ? nomeLocal : rua, rua && nomeLocal && normalizarTexto(nomeLocal) !== normalizarTexto(rua) ? rua : "", bairro, cidadeEncontrada, ufEncontrada].filter(Boolean).join(" - ");
     const chave = normalizarTexto(label);
     if (vistos.has(chave)) return [];
     vistos.add(chave);
-    return [{ rua, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label }];
+    const lat = numeroValido(item.lat);\n    const lon = numeroValido(item.lon);\n    return [{ rua: rua || nomeLocal, bairro, cidade: cidadeEncontrada, uf: ufEncontrada, label, lat, lon }];
   });
 }
 
@@ -363,7 +363,7 @@ export async function resolverCoordenadas(
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
   // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
   // Sempre priorizar o número exato; a rua é apenas alternativa explicitamente estimada.
-  return geocodificar(p);
+  const exato = await geocodificar(p);\n  if (exato) return exato;\n  if (p.coords) return { coords: p.coords, estimada: true };\n  return null;
 }
 
 function distanciaLinhaReta(a: CoordenadaGeo, b: CoordenadaGeo) {
