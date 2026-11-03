@@ -439,9 +439,10 @@ function Cardapio() {
       }
     }, 1100);
   }
-  function selecionarSugestaoRua(s: { rua: string; bairro: string; cidade: string; uf: string }) {
+  function selecionarSugestaoRua(s: { rua: string; bairro: string; cidade: string; uf: string; lat?: number | null; lon?: number | null }) {
     setRua(s.rua); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
-    setSugestoesRua([]); limparCalculo();
+    setCoordsCliente(s.lat != null && s.lon != null ? { lat: s.lat, lon: s.lon } : null);
+    setSugestoesRua([]); calcId.current++; setCalc(CALC_VAZIO);
   }
 
   function aoDigitarCep(valor: string) {
