@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchMenu, lojaEstaAberta, money, type Product, type Size } from "@/lib/menu-data";
-import { createOrder, buscarLocaisGratuitos } from "@/lib/menu.functions";
+import { createOrder } from "@/lib/menu.functions";
 import { agruparCardapio, precoSalgado, type ProdutoAgrupado } from "@/lib/agrupar-cardapio";
 import {
   LIMITE_KM,
@@ -96,7 +95,6 @@ function Cardapio() {
     refetchInterval: 60_000,
   });
   const doCreateOrder = useServerFn(createOrder);
-  const doBuscarLocaisGratuitos = useServerFn(buscarLocaisGratuitos);
   const [enviando, setEnviando] = useState(false);
 
   // Produto aberto
@@ -435,12 +433,34 @@ function Cardapio() {
     buscaRuaTimer.current = setTimeout(async () => {
       setBuscandoLocal(true);
       try {
-        const lista = await doBuscarLocaisGratuitos({ data: { input: valor.trim() } });
+        const url = new URL("https://photon.komoot.io/api/");
+        url.searchParams.set("q", valor.trim() + ", Rio Branco, Acre, Brasil");
+        url.searchParams.set("lat", "-9.975");
+        url.searchParams.set("lon", "-67.824");
+        url.searchParams.set("zoom", "12");
+        url.searchParams.set("limit", "8");
+        url.searchParams.set("lang", "pt");
+        const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
+        if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
+        const dados = await resposta.json() as { features?: { properties?: { name?: string; street?: string; housenumber?: string; district?: string; suburb?: string; neighbourhood?: string; locality?: string; city?: string; county?: string; state?: string; osm_type?: string; osm_id?: number | string }; geometry?: { coordinates?: number[] } }[] };
+        const lista = (dados.features ?? []).flatMap((f, idx) => {
+          const p = f.properties ?? {};
+          const xy = f.geometry?.coordinates;
+          if (!xy || xy.length < 2) return [];
+          const nome = p.name ?? "";
+          const logradouro = p.street ?? nome;
+          const bairroLocal = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
+          const cidadeLocal = p.city ?? p.county ?? "Rio Branco";
+          const estadoLocal = p.state === "Acre" ? "AC" : "AC";
+          const label = [nome, logradouro !== nome ? logradouro : "", p.housenumber, bairroLocal, cidadeLocal, estadoLocal].filter(Boolean).join(", ");
+          if (!label) return [];
+          return [{ id: `${p.osm_type ?? "osm"}-${p.osm_id ?? idx}`, label, rua: logradouro, numero: p.housenumber ?? "", bairro: bairroLocal, cidade: cidadeLocal, uf: estadoLocal, lat: xy[1], lon: xy[0] }];
+        });
         if (buscaId === buscaRuaId.current) setSugestoesRua(lista);
       } catch (e) {
         if (buscaId === buscaRuaId.current) {
           setSugestoesRua([]);
-          setErroBuscaLocal(e instanceof Error ? e.message : "Não foi possível pesquisar o local.");
+          setErroBuscaLocal("");
         }
       } finally {
         if (buscaId === buscaRuaId.current) setBuscandoLocal(false);
