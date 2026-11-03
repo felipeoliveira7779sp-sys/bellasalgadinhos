@@ -132,7 +132,7 @@ function Cardapio() {
   // Endereço de entrega
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
-  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; bairro: string; cidade: string; uf: string; label: string; lat: number | null; lon: number | null }[]>([]);
+  const [sugestoesRua, setSugestoesRua] = useState<{ rua: string; numero: string; bairro: string; cidade: string; uf: string; label: string; lat: number | null; lon: number | null }[]>([]);
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buscaRuaId = useRef(0);
   const [numero, setNumero] = useState("");
@@ -429,7 +429,7 @@ function Cardapio() {
     setRua(valor); setSugestoesRua([]); limparCalculo();
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
-    if (valor.trim().length < 4) return;
+    if (valor.trim().length < 3) return;
     buscaRuaTimer.current = setTimeout(async () => {
       try {
         const lista = await buscarSugestoesRua(valor, cidade || "Rio Branco", uf || "AC");
@@ -439,8 +439,8 @@ function Cardapio() {
       }
     }, 1100);
   }
-  function selecionarSugestaoRua(s: { rua: string; bairro: string; cidade: string; uf: string; lat?: number | null; lon?: number | null }) {
-    setRua(s.rua); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
+  function selecionarSugestaoRua(s: { rua: string; numero: string; bairro: string; cidade: string; uf: string; lat?: number | null; lon?: number | null }) {
+    setRua(s.rua); if (s.numero) setNumero(s.numero); else setNumero("s/n"); if (s.bairro) setBairro(s.bairro); if (s.cidade) setCidade(s.cidade); if (s.uf) setUf(s.uf);
     setCoordsCliente(s.lat != null && s.lon != null ? { lat: s.lat, lon: s.lon } : null);
     setSugestoesRua([]); calcId.current++; setCalc(CALC_VAZIO);
   }
@@ -1031,7 +1031,7 @@ function Cardapio() {
               <div className="input-group">
                 <input
                   className="input-control"
-                  placeholder="Rua, avenida ou nome do estabelecimento"
+                  placeholder="Digite rua ou nome do estabelecimento"
                   value={rua}
                   onChange={(e) => aoDigitarRua(e.target.value)}
                 />
