@@ -139,6 +139,7 @@ function Cardapio() {
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
+  const [bairroBloqueado, setBairroBloqueado] = useState(false);
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
@@ -391,6 +392,7 @@ function Cardapio() {
       if (id !== calcId.current) return;
       setRua(end.rua);
       setBairro(end.bairro);
+      setBairroBloqueado(Boolean(end.bairro?.trim()));
       setCidade(end.cidade);
       setUf(end.uf);
       // As coordenadas do serviço de CEP costumam ser o centro da cidade (distância errada);
@@ -427,6 +429,7 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
+    setBairroBloqueado(false);
     setRua(valor); setSugestoesRua([]); setErroBuscaLocal(""); setCoordsCliente(null); limparCalculo();
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
@@ -473,6 +476,7 @@ function Cardapio() {
     setRua(s.rua || s.label);
     setNumero(s.numero || "s/n");
     if (s.bairro) setBairro(s.bairro);
+    setBairroBloqueado(Boolean(s.bairro?.trim()));
     if (s.cidade) setCidade(s.cidade);
     if (s.uf) setUf(s.uf);
     setCoordsCliente({ lat: s.lat, lon: s.lon });
@@ -481,6 +485,7 @@ function Cardapio() {
   }
 
   function aoDigitarCep(valor: string) {
+    setBairroBloqueado(false);
     const formatado = formatarCep(valor);
     setCep(formatado);
     limparCalculo();
@@ -1100,7 +1105,9 @@ function Cardapio() {
                   className="input-control"
                   placeholder="Bairro"
                   value={bairro}
+                  disabled={bairroBloqueado}
                   onChange={(e) => editarEndereco(setBairro, e.target.value)}
+                  title={bairroBloqueado ? "Bairro preenchido automaticamente. Altere o CEP ou pesquise a rua novamente para escolher outro local." : "Bairro"}
                 />
               </div>
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
