@@ -418,6 +418,19 @@ function PainelConteudo({ password }: { password: string }) {
     }
   }
 
+  async function moverCategoria(index: number, direction: -1 | 1) {
+    const ordenadas = [...categories].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const atual = ordenadas[index];
+    const vizinha = ordenadas[index + direction];
+    if (!atual || !vizinha) return;
+    try {
+      await doSaveCategory({ data: { password, id: atual.id, title: atual.title, position: vizinha.position } });
+      await doSaveCategory({ data: { password, id: vizinha.id, title: vizinha.title, position: atual.position } });
+      flash("Ordem das categorias atualizada!");
+      refetch();
+    } catch (e) { flash(explicarErro(e), true); }
+  }
+
   async function renomearCategoria(c: Category, titulo: string) {
     const novo = titulo.trim();
     if (!novo || novo === c.title) return;
@@ -786,16 +799,14 @@ function PainelConteudo({ password }: { password: string }) {
         <details style={secao}>
           <summary style={secaoTitulo}>🗂️ Categorias ({categories.length})</summary>
           <div style={secaoCorpo}>
-            {categories.map((c) => (
-              <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <input
-                  style={{ ...input, marginBottom: 0 }}
-                  defaultValue={c.title}
-                  onBlur={(e) => void renomearCategoria(c, e.target.value)}
-                />
-                <button style={btnGhost} onClick={() => void removerCategoria(c)}>
-                  Remover
-                </button>
+            {[...categories].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((c, index, arr) => (
+              <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <button type="button" style={{ ...btnGhost, padding: "3px 9px", lineHeight: 1 }} disabled={index === 0} onClick={() => void moverCategoria(index, -1)} title="Mover categoria para cima">▲</button>
+                  <button type="button" style={{ ...btnGhost, padding: "3px 9px", lineHeight: 1 }} disabled={index === arr.length - 1} onClick={() => void moverCategoria(index, 1)} title="Mover categoria para baixo">▼</button>
+                </div>
+                <input style={{ ...input, marginBottom: 0 }} defaultValue={c.title} onBlur={(e) => void renomearCategoria(c, e.target.value)} />
+                <button style={btnGhost} onClick={() => void removerCategoria(c)}>Remover</button>
               </div>
             ))}
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
