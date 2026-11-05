@@ -321,18 +321,28 @@ function Cardapio() {
           const categoria = data?.categories.find((cat) => cat.id === open.category_id)?.title ?? "";
           const normalizar = (valor: string) => valor
             .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[\\u0300-\\u036f]/g, "")
             .toLowerCase();
-          const nomeCategoria = normalizar(categoria);
-          const tamanho = normalizar(`${tamanhoAtual} ${open.sizes[sizeIdx]?.label ?? ""} ${open.description ?? ""}`);
+          const referencia = normalizar([
+            categoria,
+            open.name,
+            tamanhoAtual,
+            open.sizes[sizeIdx]?.label ?? "",
+            open.description ?? "",
+          ].join(" "));
           const cadastrado = Number(open.units_base);
 
-          // A categoria específica tem prioridade: "meio cento" também contém "cento".
-          if (nomeCategoria.includes("meio cento") || nomeCategoria.includes("meio-cento")) return 50;
-          if (nomeCategoria.includes("cento")) return 100;
+          // Detecta meio cento antes de "cento", inclusive formatos como "1/2 cento".
+          const ehMeioCento =
+            /meio[ -]?cento/.test(referencia) ||
+            /1\\s*\\/\\s*2\\s*cento/.test(referencia) ||
+            /50\\s*(unidades?|un|salgados)/.test(referencia) ||
+            /\\b50\\b/.test(referencia);
+          if (ehMeioCento) return 50;
+
+          // A categoria/tamanho de cento tem prioridade sobre o cadastro genérico.
+          if (/\\bcento\\b/.test(referencia) || /100\\s*(unidades?|un|salgados)/.test(referencia) || /\\b100\\b/.test(referencia)) return 100;
           if (Number.isFinite(cadastrado) && cadastrado > 0) return cadastrado;
-          if (tamanho.includes("meio cento") || tamanho.includes("meio-cento") || tamanho.includes("50 unidade") || /\b50\b/.test(tamanho)) return 50;
-          if (tamanho.includes("cento") || tamanho.includes("100 unidade") || /\b100\b/.test(tamanho)) return 100;
           return 0;
         })(),
         flavors: open.flavors.length > 0 ? (sortido ? ["Sortidos"] : flavors) : [],
