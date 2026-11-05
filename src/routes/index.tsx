@@ -213,8 +213,12 @@ function Cardapio() {
     (total, item) => total + item.unitsPerPackage * item.qty,
     0,
   );
+  // R$ 1,00 por cento equivalente: cada meio cento (50 unidades) soma R$ 0,50.
   const adicionalCartaoCentos =
-    pagamento === "Cartão" ? Math.floor(unidadesSalgadosNoCarrinho / 100) : 0;
+    pagamento === "Cartão" ? unidadesSalgadosNoCarrinho / 100 : 0;
+  const centosEquivalentesTexto = (unidadesSalgadosNoCarrinho / 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 2,
+  });
   const precoUnitarioNoPagamento = (item: CartItem) => item.unitPrice;
   const subtotalBase = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
   const subtotal = subtotalBase + adicionalCartaoCentos;
@@ -588,6 +592,9 @@ function Cardapio() {
       if (sobretaxaAplicada > 0) {
         txt += `\n➕ *${store?.surcharge_label ?? "Taxa adicional"}:* ${money(sobretaxaAplicada)}`;
       }
+    }
+    if (adicionalCartaoCentos > 0) {
+      txt += `\n➕ *Adicional do cartão (${centosEquivalentesTexto} cento(s) equivalente(s)):* ${money(adicionalCartaoCentos)}`;
     }
     txt += `\n💰 *TOTAL:* ${money(subtotal + taxaTotal)}`;
 
@@ -1260,7 +1267,7 @@ function Cardapio() {
             ) : null}
             {adicionalCartaoCentos > 0 ? (
               <div className="receipt-line">
-                <span>Adicional do cartão ({Math.floor(unidadesSalgadosNoCarrinho / 100)} cento(s))</span>
+                <span>Adicional do cartão ({centosEquivalentesTexto} cento(s) equivalente(s))</span>
                 <span>{money(adicionalCartaoCentos)}</span>
               </div>
             ) : null}
