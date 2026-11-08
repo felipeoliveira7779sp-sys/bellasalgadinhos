@@ -42,7 +42,6 @@ export const buscarLocaisGratuitos = createServerFn({ method: "POST" })
     url.searchParams.set("lon", "-67.824");
     url.searchParams.set("zoom", "12");
     url.searchParams.set("limit", "8");
-    url.searchParams.set("lang", "pt");
     url.searchParams.set("countrycode", "BR");
 
     const response = await fetch(url, {
