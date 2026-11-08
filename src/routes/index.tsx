@@ -454,7 +454,6 @@ function Cardapio() {
         url.searchParams.set("lon", "-67.824");
         url.searchParams.set("zoom", "13");
         url.searchParams.set("limit", "15");
-        url.searchParams.set("lang", "pt");
         url.searchParams.set("countrycode", "BR");
         const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
         if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
