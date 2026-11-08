@@ -499,7 +499,6 @@ function Cardapio() {
   }
 
   function aoDigitarCep(valor: string) {
-    setBairroBloqueado(false);
     const formatado = formatarCep(valor);
     setCep(formatado);
     limparCalculo();
