@@ -238,11 +238,13 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             const endereco = item.address ?? {};
             const ruaEncontrada = normalizarTexto(endereco.road ?? endereco.pedestrian ?? "");
             const numeroEncontrado = String(endereco.house_number ?? "").trim();
-            const bairroEncontrado = normalizarTexto(endereco.suburb ?? endereco.neighbourhood ?? "");
+            const bairrosEncontrados = [endereco.suburb, endereco.neighbourhood, endereco.quarter]
+              .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
             const ruaConfere = !!ruaAlvo && !!ruaEncontrada &&
               (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
-            const bairroConfere = !bairroAlvo || !bairroEncontrado ||
-              bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+            // Se o cliente informou bairro, só aceitar resultado que confirme esse bairro.
+            const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
+              b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
             const numeroConfere = !!numero && numeroEncontrado === numero;
             const lat = numeroValido(item.lat);
             const lon = numeroValido(item.lon);
@@ -250,7 +252,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
               pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
                 (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
           })
-          .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere && c.numeroConfere)
+          .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere && c.numeroConfere && c.bairroConfere)
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -283,18 +285,19 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         const candidatos = lista.map((item) => {
           const a = item.address ?? {};
           const ruaEncontrada = normalizarTexto(a.road ?? a.pedestrian ?? "");
-          const bairroEncontrado = normalizarTexto(a.suburb ?? a.neighbourhood ?? "");
+          const bairrosEncontrados = [a.suburb, a.neighbourhood, a.quarter]
+            .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
           const lat = numeroValido(item.lat);
           const lon = numeroValido(item.lon);
           const ruaConfere = !!ruaEncontrada &&
             (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
-          const bairroConfere = !bairroAlvo || !bairroEncontrado ||
-            bairroEncontrado === bairroAlvo || bairroEncontrado.includes(bairroAlvo);
+          const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
+            b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
           return { lat, lon, ruaConfere, bairroConfere,
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
               (item.class === "highway" ? 2 : 0) };
         }).filter((item) => item.lat !== null && item.lon !== null &&
-          item.ruaConfere).sort((a, b) => b.pontos - a.pontos);
+          item.ruaConfere && item.bairroConfere).sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
             melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -307,9 +310,11 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
   }
 
   throw new Error(
-    numero
-      ? "Não encontrei o número exato nem um ponto confiável dessa rua no mapa. Confira o endereço ou entre em contato com a loja."
-      : "Não consegui localizar essa rua com precisão. Confira o endereço e tente novamente.",
+    bairro
+      ? "Não consegui confirmar esse bairro junto com a rua no mapa. Confira o nome do bairro ou entre em contato com a loja antes de calcular a entrega."
+      : numero
+        ? "Não encontrei o número exato nem um ponto confiável dessa rua no mapa. Confira o endereço ou entre em contato com a loja."
+        : "Não consegui localizar essa rua com precisão. Confira o endereço e tente novamente.",
   );
 }
 
