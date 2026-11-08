@@ -491,7 +491,7 @@ function Cardapio() {
                   const cidadeLocal = item.localidade?.trim() || "Rio Branco";
                   const label = `${logradouro}${bairroLocal ? ` — Bairro: ${bairroLocal}` : ""} (CEP: ${cepLocal})`;
                   return {
-                    id: `viacep-${cepLocal.replace(/\\D/g, "")}`,
+                    id: `viacep-${cepLocal.replace(/\D/g, "")}`,
                     label,
                     rua: logradouro,
                     numero: "",
@@ -1191,7 +1191,7 @@ function Cardapio() {
               {sugestoesRua.length > 0 ? (
                 <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
                   {sugestoesRua.map((s) => <button key={s.id} type="button" onClick={() => selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
-                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Correios (ViaCEP); mapa (Photon) como alternativa</div>
+                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Busca de CEPs via ViaCEP; mapa (Photon) como alternativa</div>
                 </div>
               ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
