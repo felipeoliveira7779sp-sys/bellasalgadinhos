@@ -131,7 +131,7 @@ function Cardapio() {
   // Endereço de entrega
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
-  const [sugestoesRua, setSugestoesRua] = useState<{ id: string; label: string; rua: string; numero: string; bairro: string; cidade: string; uf: string; lat: number; lon: number }[]>([]);
+  const [sugestoesRua, setSugestoesRua] = useState<{ id: string; label: string; rua: string; numero: string; bairro: string; cidade: string; uf: string; cep: string; lat: number; lon: number }[]>([]);
   const [buscandoLocal, setBuscandoLocal] = useState(false);
   const [erroBuscaLocal, setErroBuscaLocal] = useState("");
   const buscaRuaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -441,41 +441,132 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
-    setRua(valor); setSugestoesRua([]); setErroBuscaLocal(""); setCoordsCliente(null); limparCalculo();
+    setRua(valor);
+    setCep("");
+    setSugestoesRua([]);
+    setErroBuscaLocal("");
+    setCoordsCliente(null);
+    limparCalculo();
+
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
-    if (valor.trim().length < 3) return;
+    if (valor.trim().length < 3) {
+      setBuscandoLocal(false);
+      return;
+    }
+
     buscaRuaTimer.current = setTimeout(async () => {
       setBuscandoLocal(true);
       try {
-        const url = new URL("https://photon.komoot.io/api/");
-        url.searchParams.set("q", valor.trim() + ", Rio Branco, Acre, Brasil");
-        url.searchParams.set("lat", "-9.975");
-        url.searchParams.set("lon", "-67.824");
-        url.searchParams.set("zoom", "13");
-        url.searchParams.set("limit", "15");
-        url.searchParams.set("countrycode", "BR");
-        const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
-        if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
-        const dados = await resposta.json() as { features?: { properties?: { name?: string; street?: string; housenumber?: string; district?: string; suburb?: string; neighbourhood?: string; locality?: string; city?: string; county?: string; state?: string; osm_type?: string; osm_id?: number | string }; geometry?: { coordinates?: number[] } }[] };
-        const lista = (dados.features ?? []).flatMap((f, idx) => {
-          const p = f.properties ?? {};
-          const xy = f.geometry?.coordinates;
-          if (!xy || xy.length < 2) return [];
-          const nome = p.name ?? "";
-          const logradouro = p.street ?? nome;
-          const bairroLocal = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
-          const cidadeLocal = p.city ?? p.county ?? "Rio Branco";
-          const estadoLocal = p.state === "Acre" ? "AC" : "AC";
-          const label = [nome, logradouro !== nome ? logradouro : "", p.housenumber, bairroLocal, cidadeLocal, estadoLocal].filter(Boolean).join(", ");
-          if (!label) return [];
-          return [{ id: `${p.osm_type ?? "osm"}-${p.osm_id ?? idx}`, label, rua: logradouro, numero: p.housenumber ?? "", bairro: bairroLocal, cidade: cidadeLocal, uf: estadoLocal, lat: xy[1], lon: xy[0] }];
-        });
-        if (buscaId === buscaRuaId.current) setSugestoesRua(lista);
-      } catch (e) {
+        // 1) Fonte principal: busca oficial dos Correios via ViaCEP.
+        // A API retorna logradouro, bairro e CEP; não fornece número da residência.
+        let lista: {
+          id: string;
+          label: string;
+          rua: string;
+          numero: string;
+          bairro: string;
+          cidade: string;
+          uf: string;
+          cep: string;
+          lat: number;
+          lon: number;
+        }[] = [];
+
+        try {
+          const termo = encodeURIComponent(valor.trim());
+          const urlCep = `https://viacep.com.br/ws/AC/Rio%20Branco/${termo}/json/`;
+          const respostaCep = await fetch(urlCep, { headers: { Accept: "application/json" } });
+          if (respostaCep.ok) {
+            const dadosCep = await respostaCep.json() as
+              | { erro?: boolean }
+              | { cep?: string; logradouro?: string; bairro?: string; localidade?: string; uf?: string }[];
+            if (Array.isArray(dadosCep)) {
+              lista = dadosCep
+                .filter((item) => item.logradouro && item.cep && item.uf === "AC")
+                .map((item) => {
+                  const logradouro = item.logradouro!.trim();
+                  const bairroLocal = item.bairro?.trim() ?? "";
+                  const cepLocal = item.cep!.trim();
+                  const cidadeLocal = item.localidade?.trim() || "Rio Branco";
+                  const label = `${logradouro}${bairroLocal ? ` — Bairro: ${bairroLocal}` : ""} (CEP: ${cepLocal})`;
+                  return {
+                    id: `viacep-${cepLocal.replace(/\\D/g, "")}`,
+                    label,
+                    rua: logradouro,
+                    numero: "",
+                    bairro: bairroLocal,
+                    cidade: cidadeLocal,
+                    uf: item.uf ?? "AC",
+                    cep: cepLocal,
+                    // ViaCEP não fornece coordenadas. O endereço será geocodificado
+                    // depois que o cliente informar o número e solicitar o cálculo.
+                    lat: 0,
+                    lon: 0,
+                  };
+                });
+            }
+          }
+        } catch {
+          // Se o serviço dos Correios falhar, a busca do mapa abaixo será usada.
+        }
+
+        // 2) Reserva: Photon/OSM para nomes alternativos e locais não cadastrados no ViaCEP.
+        if (lista.length === 0) {
+          const url = new URL("https://photon.komoot.io/api/");
+          url.searchParams.set("q", valor.trim() + ", Rio Branco, Acre, Brasil");
+          url.searchParams.set("lat", "-9.975");
+          url.searchParams.set("lon", "-67.824");
+          url.searchParams.set("zoom", "13");
+          url.searchParams.set("limit", "15");
+          url.searchParams.set("countrycode", "BR");
+          const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
+          if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
+          const dados = await resposta.json() as {
+            features?: {
+              properties?: {
+                name?: string; street?: string; housenumber?: string; district?: string;
+                suburb?: string; neighbourhood?: string; locality?: string; city?: string;
+                county?: string; state?: string; osm_type?: string; osm_id?: number | string;
+              };
+              geometry?: { coordinates?: number[] };
+            }[];
+          };
+          lista = (dados.features ?? []).flatMap((f, idx) => {
+            const p = f.properties ?? {};
+            const xy = f.geometry?.coordinates;
+            if (!xy || xy.length < 2) return [];
+            const nome = p.name ?? "";
+            const logradouro = p.street ?? nome;
+            const bairroLocal = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
+            const cidadeLocal = p.city ?? p.county ?? "Rio Branco";
+            const label = [nome, logradouro !== nome ? logradouro : "", p.housenumber, bairroLocal, cidadeLocal, "AC"].filter(Boolean).join(", ");
+            if (!label) return [];
+            return [{
+              id: `${p.osm_type ?? "osm"}-${p.osm_id ?? idx}`,
+              label,
+              rua: logradouro,
+              numero: p.housenumber ?? "",
+              bairro: bairroLocal,
+              cidade: cidadeLocal,
+              uf: "AC",
+              cep: "",
+              lat: xy[1],
+              lon: xy[0],
+            }];
+          });
+        }
+
+        // Evita sugestões repetidas e impede que uma busca antiga sobrescreva a mais nova.
+        const unicas = Array.from(new Map(lista.map((item) => [
+          item.cep ? `${item.rua.toLocaleLowerCase("pt-BR")}-${item.bairro.toLocaleLowerCase("pt-BR")}-${item.cep}` : item.id,
+          item,
+        ])).values());
+        if (buscaId === buscaRuaId.current) setSugestoesRua(unicas);
+      } catch {
         if (buscaId === buscaRuaId.current) {
           setSugestoesRua([]);
-          setErroBuscaLocal("");
+          setErroBuscaLocal("Não foi possível buscar a rua agora. Você pode preencher o endereço manualmente.");
         }
       } finally {
         if (buscaId === buscaRuaId.current) setBuscandoLocal(false);
@@ -483,15 +574,17 @@ function Cardapio() {
     }, 500);
   }
 
-  function selecionarSugestaoRua(s: { id: string; label: string; rua: string; numero: string; bairro: string; cidade: string; uf: string; lat: number; lon: number }) {
+  function selecionarSugestaoRua(s: { id: string; label: string; rua: string; numero: string; bairro: string; cidade: string; uf: string; cep: string; lat: number; lon: number }) {
     setSugestoesRua([]);
     setRua(s.rua || s.label);
-    setNumero(s.numero || "s/n");
+    // ViaCEP não retorna número. Nesse caso, deixa o campo vazio para o cliente informar.
+    setNumero(s.numero || "");
     if (s.bairro) setBairro(s.bairro);
     if (s.cidade) setCidade(s.cidade);
     if (s.uf) setUf(s.uf);
-    // A sugestão serve para preencher rua/bairro, mas não é o ponto exato da casa.
-    // O frete deve geocodificar novamente com número e bairro confirmados.
+    if (s.cep) setCep(formatarCep(s.cep));
+    // Não usa coordenada aproximada da rua como endereço exato da residência.
+    // O cálculo continuará geocodificando rua + número + bairro confirmados.
     setCoordsCliente(null);
     calcId.current++;
     setCalc(CALC_VAZIO);
@@ -1098,7 +1191,7 @@ function Cardapio() {
               {sugestoesRua.length > 0 ? (
                 <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
                   {sugestoesRua.map((s) => <button key={s.id} type="button" onClick={() => selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
-                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Dados do OpenStreetMap via Photon</div>
+                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Correios (ViaCEP); mapa (Photon) como alternativa</div>
                 </div>
               ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
