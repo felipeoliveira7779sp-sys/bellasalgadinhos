@@ -62,6 +62,17 @@ type CalcFrete = {
 
 const CALC_VAZIO: CalcFrete = { status: "idle", km: null, estimada: false, mensagem: "" };
 
+function formatarTelefone(valor: string) {
+  const digitos = valor.replace(/\\D/g, "").slice(0, 11);
+  if (!digitos) return "";
+  if (digitos.length <= 2) return `(${digitos}`;
+  const ddd = digitos.slice(0, 2);
+  const numero = digitos.slice(2);
+  if (numero.length <= 4) return `(${ddd}) ${numero}`;
+  if (digitos.length <= 10) return `(${ddd}) ${numero.slice(0, 4)}-${numero.slice(4)}`;
+  return `(${ddd}) ${numero.slice(0, 5)}-${numero.slice(5)}`;
+}
+
 function basePrice(p: Product) {
   return p.price ?? (p.sizes[0]?.price ?? 0);
 }
@@ -139,6 +150,7 @@ function Cardapio() {
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
+  const [bairroBloqueado, setBairroBloqueado] = useState(false);
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
@@ -405,6 +417,7 @@ function Cardapio() {
       if (id !== calcId.current) return;
       setRua(end.rua);
       setBairro(end.bairro);
+      setBairroBloqueado(Boolean(end.bairro));
       setCidade(end.cidade);
       setUf(end.uf);
       // As coordenadas do serviço de CEP costumam ser o centro da cidade (distância errada);
@@ -441,6 +454,7 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
+    setBairroBloqueado(false);
     setRua(valor);
     setCep("");
     setSugestoesRua([]);
@@ -580,6 +594,7 @@ function Cardapio() {
     // ViaCEP não retorna número. Nesse caso, deixa o campo vazio para o cliente informar.
     setNumero(s.numero || "");
     setBairro(s.bairro);
+    setBairroBloqueado(Boolean(s.bairro));
     setCidade(s.cidade || "Rio Branco");
     setUf(s.uf || "AC");
     setCep(s.cep ? formatarCep(s.cep) : "");
@@ -591,6 +606,7 @@ function Cardapio() {
   }
 
   function aoDigitarCep(valor: string) {
+    setBairroBloqueado(false);
     const formatado = formatarCep(valor);
     setCep(formatado);
     limparCalculo();
@@ -619,6 +635,11 @@ function Cardapio() {
     const hojeLocal = dataLocalRioBranco();
     if (modoPedido === "agora" && !lojaEstaAberta(store?.open_status, new Date(), store?.hours_text)) {
       alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
+      return;
+    }
+    const telefoneDigitos = tel.replace(/\\D/g, "");
+    if (telefoneDigitos.length !== 10 && telefoneDigitos.length !== 11) {
+      alert("Informe um telefone válido com DDD. Exemplo: (68) 99999-9999.");
       return;
     }
     if (!nome || !tel || !pagamento || (modoPedido === "agendado" && (!dataPedido || !horario))) {
@@ -697,7 +718,7 @@ function Cardapio() {
       const { id } = await doCreateOrder({
         data: {
           customer_name: nome,
-          customer_phone: tel,
+          customer_phone: telefoneDigitos,
           order_type: tipo,
           order_mode: modoPedido,
           scheduled_date: dataEfetiva,
@@ -1151,10 +1172,15 @@ function Cardapio() {
             <div className="input-group">
               <input
                 className="input-control"
-                placeholder="Telefone (WhatsApp)"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={16}
+                placeholder="(68) 99999-9999"
                 value={tel}
-                onChange={(e) => setTel(e.target.value)}
+                onChange={(e) => setTel(formatarTelefone(e.target.value))}
               />
+              <small style={{ color: "#666" }}>Digite DDD + número. Ex.: (68) 99999-9999</small>
             </div>
           </div>
 
@@ -1215,8 +1241,10 @@ function Cardapio() {
                   className="input-control"
                   placeholder="Bairro"
                   value={bairro}
-                  onChange={(e) => editarEndereco(setBairro, e.target.value)}
-                  title="Confira se o bairro corresponde ao endereço do cliente."
+                  readOnly={bairroBloqueado}
+                  onChange={(e) => { if (!bairroBloqueado) editarEndereco(setBairro, e.target.value); }}
+                  title={bairroBloqueado ? "Bairro preenchido pela busca do endereço e bloqueado para evitar alterações." : "O bairro será preenchido ao selecionar uma rua ou CEP."}
+                  style={bairroBloqueado ? { background: "#f3f4f6", color: "#555", cursor: "not-allowed" } : undefined}
                 />
               </div>
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
