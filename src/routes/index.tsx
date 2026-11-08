@@ -63,7 +63,7 @@ type CalcFrete = {
 const CALC_VAZIO: CalcFrete = { status: "idle", km: null, estimada: false, mensagem: "" };
 
 function formatarTelefone(valor: string) {
-  const digitos = valor.replace(/\\D/g, "").slice(0, 11);
+  const digitos = valor.replace(/\D/g, "").slice(0, 11);
   if (!digitos) return "";
   if (digitos.length <= 2) return `(${digitos}`;
   const ddd = digitos.slice(0, 2);
@@ -637,7 +637,7 @@ function Cardapio() {
       alert("A loja está fechada para pedidos de hoje. Escolha uma data futura para agendar.");
       return;
     }
-    const telefoneDigitos = tel.replace(/\\D/g, "");
+    const telefoneDigitos = tel.replace(/\D/g, "");
     if (telefoneDigitos.length !== 10 && telefoneDigitos.length !== 11) {
       alert("Informe um telefone válido com DDD. Exemplo: (68) 99999-9999.");
       return;
