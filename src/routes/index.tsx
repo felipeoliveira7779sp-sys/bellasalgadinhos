@@ -139,7 +139,6 @@ function Cardapio() {
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
-  const [bairroBloqueado, setBairroBloqueado] = useState(false);
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
@@ -406,7 +405,6 @@ function Cardapio() {
       if (id !== calcId.current) return;
       setRua(end.rua);
       setBairro(end.bairro);
-      setBairroBloqueado(Boolean(end.bairro?.trim()));
       setCidade(end.cidade);
       setUf(end.uf);
       // As coordenadas do serviço de CEP costumam ser o centro da cidade (distância errada);
@@ -443,7 +441,6 @@ function Cardapio() {
   }
 
   function aoDigitarRua(valor: string) {
-    setBairroBloqueado(false);
     setRua(valor); setSugestoesRua([]); setErroBuscaLocal(""); setCoordsCliente(null); limparCalculo();
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
@@ -455,8 +452,10 @@ function Cardapio() {
         url.searchParams.set("q", valor.trim() + ", Rio Branco, Acre, Brasil");
         url.searchParams.set("lat", "-9.975");
         url.searchParams.set("lon", "-67.824");
-        url.searchParams.set("zoom", "12");
-        url.searchParams.set("limit", "8");
+        url.searchParams.set("zoom", "13");
+        url.searchParams.set("limit", "15");
+        url.searchParams.set("lang", "pt");
+        url.searchParams.set("countrycode", "BR");
         const resposta = await fetch(url.toString(), { headers: { Accept: "application/geo+json" } });
         if (!resposta.ok) throw new Error("Busca temporariamente indisponível");
         const dados = await resposta.json() as { features?: { properties?: { name?: string; street?: string; housenumber?: string; district?: string; suburb?: string; neighbourhood?: string; locality?: string; city?: string; county?: string; state?: string; osm_type?: string; osm_id?: number | string }; geometry?: { coordinates?: number[] } }[] };
@@ -490,10 +489,11 @@ function Cardapio() {
     setRua(s.rua || s.label);
     setNumero(s.numero || "s/n");
     if (s.bairro) setBairro(s.bairro);
-    setBairroBloqueado(Boolean(s.bairro?.trim()));
     if (s.cidade) setCidade(s.cidade);
     if (s.uf) setUf(s.uf);
-    setCoordsCliente({ lat: s.lat, lon: s.lon });
+    // A sugestão serve para preencher rua/bairro, mas não é o ponto exato da casa.
+    // O frete deve geocodificar novamente com número e bairro confirmados.
+    setCoordsCliente(null);
     calcId.current++;
     setCalc(CALC_VAZIO);
   }
@@ -509,6 +509,8 @@ function Cardapio() {
   // Qualquer edição de rua/bairro/cidade/UF invalida o cálculo anterior
   function editarEndereco(setter: (v: string) => void, valor: string) {
     setter(valor);
+    // Qualquer ajuste manual invalida coordenadas antigas para evitar frete em outro bairro.
+    setCoordsCliente(null);
     limparCalculo();
   }
 
@@ -1107,7 +1109,7 @@ function Cardapio() {
                   style={{ flex: 1 }}
                   placeholder="Número"
                   value={numero}
-                  onChange={(e) => setNumero(e.target.value)}
+                  onChange={(e) => editarEndereco(setNumero, e.target.value)}
                 />
                 <input
                   className="input-control"
@@ -1122,9 +1124,8 @@ function Cardapio() {
                   className="input-control"
                   placeholder="Bairro"
                   value={bairro}
-                  disabled={bairroBloqueado}
                   onChange={(e) => editarEndereco(setBairro, e.target.value)}
-                  title={bairroBloqueado ? "Bairro preenchido automaticamente. Altere o CEP ou pesquise a rua novamente para escolher outro local." : "Bairro"}
+                  title="Confira se o bairro corresponde ao endereço do cliente."
                 />
               </div>
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
