@@ -508,7 +508,7 @@ function Cardapio() {
             }
           }
         } catch {
-          // Se o serviço dos Correios falhar, a busca do mapa abaixo será usada.
+          // Se o ViaCEP falhar ou não encontrar logradouros, a busca do mapa será usada.
         }
 
         // 2) Reserva: Photon/OSM para nomes alternativos e locais não cadastrados no ViaCEP.
