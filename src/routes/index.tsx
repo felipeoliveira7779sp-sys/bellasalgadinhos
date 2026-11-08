@@ -579,10 +579,10 @@ function Cardapio() {
     setRua(s.rua || s.label);
     // ViaCEP não retorna número. Nesse caso, deixa o campo vazio para o cliente informar.
     setNumero(s.numero || "");
-    if (s.bairro) setBairro(s.bairro);
-    if (s.cidade) setCidade(s.cidade);
-    if (s.uf) setUf(s.uf);
-    if (s.cep) setCep(formatarCep(s.cep));
+    setBairro(s.bairro);
+    setCidade(s.cidade || "Rio Branco");
+    setUf(s.uf || "AC");
+    setCep(s.cep ? formatarCep(s.cep) : "");
     // Não usa coordenada aproximada da rua como endereço exato da residência.
     // O cálculo continuará geocodificando rua + número + bairro confirmados.
     setCoordsCliente(null);
@@ -1186,7 +1186,7 @@ function Cardapio() {
                   onChange={(e) => aoDigitarRua(e.target.value)}
                 />
               </div>
-              {buscandoLocal ? <p style={{ fontSize: 12, color: "#666", margin: "0 0 8px" }}>Pesquisando locais (OpenStreetMap)...</p> : null}
+              {buscandoLocal ? <p style={{ fontSize: 12, color: "#666", margin: "0 0 8px" }}>Buscando ruas e CEPs...</p> : null}
               {erroBuscaLocal ? <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 8px" }}>{erroBuscaLocal}</p> : null}
               {sugestoesRua.length > 0 ? (
                 <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
