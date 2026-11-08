@@ -252,7 +252,9 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
               pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
                 (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
           })
-          .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere && c.numeroConfere && c.bairroConfere)
+          // Rua e número confirmados em Rio Branco são os critérios obrigatórios.
+          // O bairro apenas aumenta a prioridade: o OSM pode estar desatualizado.
+          .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere && c.numeroConfere)
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -297,7 +299,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
               (item.class === "highway" ? 2 : 0) };
         }).filter((item) => item.lat !== null && item.lon !== null &&
-          item.ruaConfere && item.bairroConfere).sort((a, b) => b.pontos - a.pontos);
+          item.ruaConfere).sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
             melhor?.lon !== null && melhor?.lon !== undefined) {
