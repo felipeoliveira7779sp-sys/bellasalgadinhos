@@ -252,11 +252,13 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
               pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
                 (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
           })
-          // Rua, número e bairro precisam corresponder quando o mapa informa o bairro.
-          // Isso evita aceitar outro trecho de uma rua homônima em bairro diferente.
-          // Se o mapa não confirmar o bairro, é mais seguro pedir conferência do que cobrar frete errado.
+          // Exige correspondência exata da rua e do número.
+          // Se o mapa informar um bairro diferente, rejeita para evitar rua homônima.
+          // Na consulta completa (que já inclui o bairro informado pelo cliente),
+          // aceita bairro ausente somente quando rua e número forem confirmados.
+          // Isso atende ruas em que o OpenStreetMap não cadastrou o bairro no resultado.
           .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere &&
-            c.numeroConfere && (!bairroAlvo || c.bairroConfere))
+            c.numeroConfere && (!bairroAlvo || c.bairroConfere || (i === 1 && !c.bairroConfere)))
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
