@@ -190,7 +190,20 @@ type NominatimItem = {
 };
 
 function normalizarTexto(v: string) {
-  return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const numeros: Record<string, string> = {
+    um: "1", uma: "1", dois: "2", duas: "2", tres: "3", quatro: "4",
+    cinco: "5", seis: "6", sete: "7", oito: "8", nove: "9", dez: "10",
+    onze: "11", doze: "12", treze: "13", quatorze: "14", catorze: "14",
+    quinze: "15", dezesseis: "16", dezessete: "17", dezoito: "18",
+    dezenove: "19", vinte: "20",
+  };
+  const romanos: Record<string, string> = {
+    i: "1", ii: "2", iii: "3", iv: "4", v: "5",
+    vi: "6", vii: "7", viii: "8", ix: "9", x: "10",
+  };
+  const palavras = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/ll/g, "l").match(/[a-z]+|[0-9]+/g) ?? [];
+  return palavras.map((palavra) => numeros[palavra] ?? romanos[palavra] ?? palavra).join("");
 }
 
 async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
