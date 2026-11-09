@@ -248,7 +248,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             const numeroConfere = !!numero && numeroEncontrado === numero;
             const lat = numeroValido(item.lat);
             const lon = numeroValido(item.lon);
-            return { lat, lon, ruaConfere, bairroConfere, numeroConfere,
+            return { lat, lon, ruaConfere, bairroConfere, bairroInformadoNoMapa: bairrosEncontrados.length > 0, numeroConfere,
               pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
                 (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
           })
@@ -258,7 +258,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           // aceita bairro ausente somente quando rua e número forem confirmados.
           // Isso atende ruas em que o OpenStreetMap não cadastrou o bairro no resultado.
           .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere &&
-            c.numeroConfere && (!bairroAlvo || c.bairroConfere || (i === 1 && !c.bairroConfere)))
+            c.numeroConfere && (!bairroAlvo || c.bairroConfere || (i === 1 && !c.bairroInformadoNoMapa)))
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
