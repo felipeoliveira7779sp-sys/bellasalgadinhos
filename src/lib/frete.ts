@@ -201,9 +201,13 @@ function normalizarTexto(v: string) {
     i: "1", ii: "2", iii: "3", iv: "4", v: "5",
     vi: "6", vii: "7", viii: "8", ix: "9", x: "10",
   };
-  const palavras = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  const palavras = v.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
     .toLowerCase().replace(/ll/g, "l").match(/[a-z]+|[0-9]+/g) ?? [];
   return palavras.map((palavra) => numeros[palavra] ?? romanos[palavra] ?? palavra).join("");
+}
+
+function normalizarNomeRua(v: string) {
+  return normalizarTexto(v).replace(/^(avenida|av|travessa|tv|rua|alameda|beco|praca|estrada)/, "");
 }
 
 async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
@@ -244,12 +248,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${tentativas[i]}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        const ruaAlvo = normalizarTexto(rua);
+        const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista
           .map((item) => {
             const endereco = item.address ?? {};
-            const ruaEncontrada = normalizarTexto(endereco.road ?? endereco.pedestrian ?? "");
+            const ruaEncontrada = normalizarNomeRua(endereco.road ?? endereco.pedestrian ?? "");
             const numeroEncontrado = String(endereco.house_number ?? "").trim();
             const bairrosEncontrados = [endereco.suburb, endereco.neighbourhood, endereco.quarter]
               .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
@@ -271,7 +275,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           // aceita bairro ausente somente quando rua e número forem confirmados.
           // Isso atende ruas em que o OpenStreetMap não cadastrou o bairro no resultado.
           .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere &&
-            c.numeroConfere && (!bairroAlvo || c.bairroConfere || (i === 1 && !c.bairroInformadoNoMapa)))
+            c.numeroConfere)
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -298,11 +302,11 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${params}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        const ruaAlvo = normalizarTexto(rua);
+        const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista.map((item) => {
           const a = item.address ?? {};
-          const ruaEncontrada = normalizarTexto(a.road ?? a.pedestrian ?? "");
+          const ruaEncontrada = normalizarNomeRua(a.road ?? a.pedestrian ?? "");
           const bairrosEncontrados = [a.suburb, a.neighbourhood, a.quarter]
             .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
           const lat = numeroValido(item.lat);
@@ -315,8 +319,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             bairroInformadoNoMapa: bairrosEncontrados.length > 0,
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
               (item.class === "highway" ? 2 : 0) };
-        }).filter((item) => item.lat !== null && item.lon !== null &&
-          item.ruaConfere && (!bairroAlvo || item.bairroConfere || !item.bairroInformadoNoMapa))
+        }).filter((item) => item.lat !== null && item.lon !== null && item.ruaConfere)
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
