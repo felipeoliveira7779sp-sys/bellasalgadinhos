@@ -289,12 +289,11 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
   if (rua && numero) {
     await esperar(1100);
     try {
+      // Busca a rua junto com o bairro informado. Isso ajuda quando o OSM
+      // não cadastrou o número da casa nem preencheu o campo de bairro.
       const params = new URLSearchParams({
         ...base,
-        street: rua,
-        city: cidade,
-        state: estado,
-        country: "Brasil",
+        q: `${rua}, ${bairro}, ${cidade}, ${estado}, Brasil`,
       });
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${params}`);
       if (r.ok) {
@@ -313,10 +312,11 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
             b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
           return { lat, lon, ruaConfere, bairroConfere,
+            bairroInformadoNoMapa: bairrosEncontrados.length > 0,
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
               (item.class === "highway" ? 2 : 0) };
         }).filter((item) => item.lat !== null && item.lon !== null &&
-          item.ruaConfere && (!bairroAlvo || item.bairroConfere))
+          item.ruaConfere && (!bairroAlvo || item.bairroConfere || !item.bairroInformadoNoMapa))
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
