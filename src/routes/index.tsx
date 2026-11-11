@@ -420,9 +420,12 @@ function Cardapio() {
       setBairroBloqueado(Boolean(end.bairro));
       setCidade(end.cidade);
       setUf(end.uf);
-      // As coordenadas do serviço de CEP costumam ser o centro da cidade (distância errada);
-      // localizamos pela rua/bairro no mapa.
-      const coords = null;
+      // Primeiro tentamos localizar rua e número no mapa. Se o OSM não tiver
+      // a numeração/bairro, as coordenadas do CEP ficam como último recurso
+      // aproximado, e o cálculo será marcado como estimado.
+      const coords = end.lat !== null && end.lon !== null
+        ? { lat: end.lat, lon: end.lon }
+        : null;
       setCoordsCliente(coords);
       if (!end.rua) {
         setCalc({
