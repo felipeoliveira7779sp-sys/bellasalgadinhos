@@ -195,13 +195,17 @@ function normalizarTexto(v: string) {
     cinco: "5", seis: "6", sete: "7", oito: "8", nove: "9", dez: "10",
     onze: "11", doze: "12", treze: "13", quatorze: "14", catorze: "14",
     quinze: "15", dezesseis: "16", dezessete: "17", dezoito: "18",
-    dezenove: "19", vinte: "20",
+    dezenove: "19", vinte: "20", trinta: "30",
+    "vinte e um": "21", "vinte e dois": "22", "vinte e tres": "23",
+    "vinte e quatro": "24", "vinte e cinco": "25", "vinte e seis": "26",
+    "vinte e sete": "27", "vinte e oito": "28", "vinte e nove": "29",
+    "trinta e um": "31",
   };
   const romanos: Record<string, string> = {
     i: "1", ii: "2", iii: "3", iv: "4", v: "5",
     vi: "6", vii: "7", viii: "8", ix: "9", x: "10",
   };
-  const palavras = v.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+  const palavras = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/ll/g, "l").match(/[a-z]+|[0-9]+/g) ?? [];
   return palavras.map((palavra) => numeros[palavra] ?? romanos[palavra] ?? palavra).join("");
 }
@@ -412,18 +416,80 @@ export async function buscarSugestoesRua(
   });
 }
 
+async function localizarCentroBairro(
+  p: DadosEndereco,
+): Promise<CoordenadaGeo | null> {
+  if (!p.bairro.trim() || !p.cidade.trim() || !p.uf.trim()) return null;
+  const estado = UF_NOMES[p.uf.toUpperCase()] ?? p.uf;
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    limit: "5",
+    countrycodes: "br",
+    "accept-language": "pt-BR",
+    addressdetails: "1",
+    q: `${p.bairro}, ${p.cidade}, ${estado}, Brasil`,
+  });
+
+  try {
+    const r = await fetchComTimeout(
+      `https://nominatim.openstreetmap.org/search?${params}`,
+      7000,
+    );
+    if (!r.ok) return null;
+    const lista = (await r.json()) as NominatimItem[];
+    const bairroAlvo = normalizarTexto(p.bairro);
+    const cidadeAlvo = normalizarTexto(p.cidade);
+    const estadoAlvo = normalizarTexto(estado);
+    const candidato = lista.find((item) => {
+      const a = item.address ?? {};
+      const bairros = [a.suburb, a.neighbourhood, a.quarter]
+        .map((v) => normalizarTexto(v ?? "")).filter(Boolean);
+      const cidades = [a.city, a.town, a.municipality]
+        .map((v) => normalizarTexto(v ?? "")).filter(Boolean);
+      const estadoMapa = normalizarTexto(a.state ?? "");
+      const bairroConfere = bairros.some((b) =>
+        b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b),
+      );
+      const cidadeConfere = cidades.length === 0 || cidades.some((v) =>
+        v === cidadeAlvo || v.includes(cidadeAlvo) || cidadeAlvo.includes(v),
+      );
+      const estadoConfere = !estadoMapa || estadoMapa === estadoAlvo ||
+        estadoMapa.includes(estadoAlvo) || estadoAlvo.includes(estadoMapa);
+      return bairroConfere && cidadeConfere && estadoConfere &&
+        numeroValido(item.lat) !== null && numeroValido(item.lon) !== null;
+    });
+    if (!candidato) return null;
+    const lat = numeroValido(candidato.lat);
+    const lon = numeroValido(candidato.lon);
+    return lat !== null && lon !== null ? { lat, lon } : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolverCoordenadas(
   p: DadosEndereco,
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
-  // Não usar coordenadas aproximadas do CEP: elas podem representar o centro do bairro.
-  // Sempre priorizar o número exato; a rua é apenas alternativa explicitamente estimada.
+  // Nível 1 e 2: número exato e, depois, trecho da própria rua.
   try {
-    const exato = await geocodificar(p);
-    if (exato) return exato;
+    const rua = await geocodificar(p);
+    if (rua) return rua;
   } catch {
-    // Usa o ponto do estabelecimento selecionado como alternativa estimada.
+    // Continua para as fontes de contingência.
   }
-  if (p.coords) return { coords: p.coords, estimada: true };
+
+  // Nível 3: coordenadas do CEP (BrasilAPI), sempre marcadas como estimadas.
+  // A tela só fornece essas coordenadas depois de consultar o CEP digitado.
+  if (p.coords &&
+      Number.isFinite(p.coords.lat) && Number.isFinite(p.coords.lon) &&
+      Math.abs(p.coords.lat) <= 90 && Math.abs(p.coords.lon) <= 180) {
+    return { coords: p.coords, estimada: true };
+  }
+
+  // Nível 4: centro do bairro, somente quando o mapa confirma bairro/cidade/UF.
+  const centroBairro = await localizarCentroBairro(p);
+  if (centroBairro) return { coords: centroBairro, estimada: true };
+
   return null;
 }
 
