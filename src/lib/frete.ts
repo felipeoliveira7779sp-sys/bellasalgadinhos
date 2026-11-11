@@ -293,11 +293,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
   if (rua && numero) {
     await esperar(1100);
     try {
-      // Busca a rua junto com o bairro informado. Isso ajuda quando o OSM
-      // não cadastrou o número da casa nem preencheu o campo de bairro.
+      // Contingência sem bairro: há bairros oficiais dos Correios que não
+      // existem na divisão territorial cadastrada pelo OpenStreetMap.
+      // A busca continua limitada à cidade e ao estado; o bairro só pontua.
       const params = new URLSearchParams({
         ...base,
-        q: `${rua}, ${bairro}, ${cidade}, ${estado}, Brasil`,
+        q: `${rua}, ${cidade}, ${estado}, Brasil`,
       });
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${params}`);
       if (r.ok) {
