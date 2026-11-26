@@ -235,8 +235,8 @@ function correspondeRua(entrada: string, encontrada: string): boolean {
   const alvo = normalizarNomeRua(entrada);
   const mapa = normalizarNomeRua(encontrada);
   if (!alvo || !mapa) return false;
-  const rodoviaAlvo = alvo.match(/(?:br|ac)\\d{1,3}/);
-  const rodoviaMapa = mapa.match(/(?:br|ac)\\d{1,3}/);
+  const rodoviaAlvo = alvo.match(/(?:br|ac)\d{1,3}/);
+  const rodoviaMapa = mapa.match(/(?:br|ac)\d{1,3}/);
   if (rodoviaAlvo) return !!rodoviaMapa && rodoviaAlvo[0] === rodoviaMapa[0];
   return mapa.includes(alvo) || alvo.includes(mapa);
 }
@@ -268,7 +268,6 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       if (response.ok) {
         const data = await response.json() as { features?: PhotonFeature[] };
         const bairroAlvo = normalizarTexto(bairro);
-        const rodoviaLonga = /\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua);
         const candidatos = (data.features ?? []).map((feature) => {
           const prop = feature.properties ?? {};
           const nomeRua = prop.street ?? prop.name ?? "";
@@ -288,7 +287,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         }).filter((item) =>
           item.ruaConfere &&
           item.bairroConfere &&
-          (item.numeroConfere || /\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)) &&
+          (item.numeroConfere || /\\b(br|ac)[\\s-]*\d{1,3}\\b/i.test(rua)) &&
           item.coords?.lat !== null &&
           item.coords?.lat !== undefined &&
           item.coords?.lon !== null &&
@@ -296,7 +295,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         );
         const melhor = candidatos[0];
         if (melhor?.coords?.lat != null && melhor.coords.lon != null) {
-          return { coords: melhor.coords, estimada: false };
+          return { coords: melhor.coords, estimada: !melhor.numeroConfere };
         }
       }
     } catch {
@@ -390,7 +389,6 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${params}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista.map((item) => {
           const a = item.address ?? {};
