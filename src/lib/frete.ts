@@ -324,8 +324,14 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             bairroInformadoNoMapa: bairrosEncontrados.length > 0,
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
               (item.class === "highway" ? 2 : 0) };
-        }).filter((item) => item.lat !== null && item.lon !== null && item.ruaConfere)
-          .sort((a, b) => b.pontos - a.pontos);
+        }).filter((item) =>
+          item.lat !== null &&
+          item.lon !== null &&
+          item.ruaConfere &&
+          // Se o mapa informa um bairro, não aceita outro bairro:
+          // isso evita escolher um trecho homônimo ou distante da mesma rodovia.
+          (!item.bairroInformadoNoMapa || item.bairroConfere)
+        ).sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
             melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -470,25 +476,15 @@ async function localizarCentroBairro(
 export async function resolverCoordenadas(
   p: DadosEndereco,
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
-  // Nível 1 e 2: número exato e, depois, trecho da própria rua.
+  // Usa somente uma localização vinculada à rua informada.
+  // Coordenadas genéricas do CEP ou do centro do bairro podem deslocar
+  // o destino vários quilômetros e reduzir indevidamente a taxa de entrega.
   try {
     const rua = await geocodificar(p);
     if (rua) return rua;
   } catch {
-    // Continua para as fontes de contingência.
+    // Não substitui o endereço por um ponto aproximado de outra região.
   }
-
-  // Nível 3: coordenadas do CEP (BrasilAPI), sempre marcadas como estimadas.
-  // A tela só fornece essas coordenadas depois de consultar o CEP digitado.
-  if (p.coords &&
-      Number.isFinite(p.coords.lat) && Number.isFinite(p.coords.lon) &&
-      Math.abs(p.coords.lat) <= 90 && Math.abs(p.coords.lon) <= 180) {
-    return { coords: p.coords, estimada: true };
-  }
-
-  // Nível 4: centro do bairro, somente quando o mapa confirma bairro/cidade/UF.
-  const centroBairro = await localizarCentroBairro(p);
-  if (centroBairro) return { coords: centroBairro, estimada: true };
 
   return null;
 }
