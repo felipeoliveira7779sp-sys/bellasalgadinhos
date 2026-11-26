@@ -287,7 +287,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         }).filter((item) =>
           item.ruaConfere &&
           item.bairroConfere &&
-          (item.numeroConfere || /\\b(br|ac)[\\s-]*\d{1,3}\\b/i.test(rua)) &&
+          (item.numeroConfere || /\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)) &&
           item.coords?.lat !== null &&
           item.coords?.lat !== undefined &&
           item.coords?.lon !== null &&
