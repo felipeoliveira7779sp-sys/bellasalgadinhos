@@ -260,7 +260,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         const data = await response.json() as { features?: PhotonFeature[] };
         const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
-        const rodoviaLonga = /\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua);
+        const rodoviaLonga = /\b(br|ac)[\s-]*\\d{1,3}\b/i.test(rua);
         const candidatos = (data.features ?? []).map((feature) => {
           const prop = feature.properties ?? {};
           const nomeRua = normalizarNomeRua(prop.street ?? prop.name ?? "");
@@ -355,7 +355,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere &&
             c.numeroConfere &&
             // Para rodovias, não aceita resultado sem bairro confirmado.
-            (/\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)
+            (/\b(br|ac)[\s-]*\\d{1,3}\b/i.test(rua)
               ? c.bairroInformadoNoMapa && c.bairroConfere
               : (!c.bairroInformadoNoMapa || c.bairroConfere)))
           .sort((a, b) => b.pontos - a.pontos);
@@ -407,7 +407,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           item.lon !== null &&
           item.ruaConfere &&
           // Rodovias exigem bairro confirmado para evitar trechos rurais distantes.
-          (/\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)
+          (/\b(br|ac)[\s-]*\\d{1,3}\b/i.test(rua)
             ? item.bairroInformadoNoMapa && item.bairroConfere
             : (!item.bairroInformadoNoMapa || item.bairroConfere))
         ).sort((a, b) => b.pontos - a.pontos);
