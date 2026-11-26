@@ -166,6 +166,23 @@ export type DadosEndereco = {
   coords: CoordenadaGeo | null; // coordenadas já conhecidas (ex: vindas do CEP)
 };
 
+type PhotonFeature = {
+  properties?: {
+    name?: string;
+    street?: string;
+    housenumber?: string;
+    district?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    locality?: string;
+    city?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+  };
+  geometry?: { coordinates?: number[] };
+};
+
 type NominatimItem = {
   lat: string;
   lon: string;
@@ -222,6 +239,63 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
   const numero = p.numero.trim();
   const bairro = p.bairro.trim();
   const cidade = p.cidade.trim();
+
+  // Primeiro tenta o Photon com o endereço completo e viés geográfico
+  // para Rio Branco. Em rodovias, exige confirmação explícita do bairro.
+  if (rua && numero && bairro) {
+    try {
+      const params = new URLSearchParams({
+        q: `${numero}, ${rua}, ${bairro}, ${cidade}, ${estado}, Brasil`,
+        lat: "-9.975",
+        lon: "-67.824",
+        zoom: "13",
+        limit: "10",
+        lang: "pt",
+      });
+      const response = await fetchComTimeout(
+        `https://photon.komoot.io/api/?${params.toString()}`,
+        7000,
+      );
+      if (response.ok) {
+        const data = await response.json() as { features?: PhotonFeature[] };
+        const ruaAlvo = normalizarNomeRua(rua);
+        const bairroAlvo = normalizarTexto(bairro);
+        const rodoviaLonga = /\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua);
+        const candidatos = (data.features ?? []).map((feature) => {
+          const prop = feature.properties ?? {};
+          const nomeRua = normalizarNomeRua(prop.street ?? prop.name ?? "");
+          const bairroMapa = normalizarTexto(
+            prop.district ?? prop.suburb ?? prop.neighbourhood ?? prop.locality ?? "",
+          );
+          const numeroMapa = String(prop.housenumber ?? "").trim();
+          const xy = feature.geometry?.coordinates;
+          const ruaConfere = !!nomeRua && !!ruaAlvo &&
+            (nomeRua.includes(ruaAlvo) || ruaAlvo.includes(nomeRua));
+          const bairroConfere = !!bairroMapa &&
+            (bairroMapa === bairroAlvo || bairroMapa.includes(bairroAlvo) || bairroAlvo.includes(bairroMapa));
+          const numeroConfere = !!numeroMapa && numeroMapa === numero;
+          const coords = xy && xy.length >= 2
+            ? { lat: numeroValido(xy[1]), lon: numeroValido(xy[0]) }
+            : null;
+          return { ruaConfere, bairroConfere, numeroConfere, coords };
+        }).filter((item) =>
+          item.ruaConfere &&
+          item.bairroConfere &&
+          item.numeroConfere &&
+          item.coords?.lat !== null &&
+          item.coords?.lat !== undefined &&
+          item.coords?.lon !== null &&
+          item.coords?.lon !== undefined
+        );
+        const melhor = candidatos[0];
+        if (melhor?.coords?.lat != null && melhor.coords.lon != null) {
+          return { coords: melhor.coords, estimada: false };
+        }
+      }
+    } catch {
+      // Continua para a busca Nominatim, sempre com validação de bairro.
+    }
+  }
 
   // O número e a rua são os dados mais importantes: não começar pelo CEP
   // nem pelo bairro, pois isso pode apontar para o centro da região.
@@ -280,8 +354,10 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           // Isso atende ruas em que o OpenStreetMap não cadastrou o bairro no resultado.
           .filter((c) => c.lat !== null && c.lon !== null && c.ruaConfere &&
             c.numeroConfere &&
-            // Quando o mapa informa o bairro, ele também precisa corresponder.
-            (!c.bairroInformadoNoMapa || c.bairroConfere))
+            // Para rodovias, não aceita resultado sem bairro confirmado.
+            (/\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)
+              ? c.bairroInformadoNoMapa && c.bairroConfere
+              : (!c.bairroInformadoNoMapa || c.bairroConfere)))
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -330,9 +406,10 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           item.lat !== null &&
           item.lon !== null &&
           item.ruaConfere &&
-          // Se o mapa informa um bairro, não aceita outro bairro:
-          // isso evita escolher um trecho homônimo ou distante da mesma rodovia.
-          (!item.bairroInformadoNoMapa || item.bairroConfere)
+          // Rodovias exigem bairro confirmado para evitar trechos rurais distantes.
+          (/\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)
+            ? item.bairroInformadoNoMapa && item.bairroConfere
+            : (!item.bairroInformadoNoMapa || item.bairroConfere))
         ).sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
