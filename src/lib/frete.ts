@@ -228,7 +228,17 @@ function normalizarTexto(v: string) {
 }
 
 function normalizarNomeRua(v: string) {
-  return normalizarTexto(v).replace(/^(avenida|av|travessa|tv|rua|alameda|beco|praca|estrada)/, "");
+  return normalizarTexto(v).replace(/^(avenida|av|travessa|tv|rua|alameda|beco|praca|estrada|rodovia)/, "");
+}
+
+function correspondeRua(entrada: string, encontrada: string): boolean {
+  const alvo = normalizarNomeRua(entrada);
+  const mapa = normalizarNomeRua(encontrada);
+  if (!alvo || !mapa) return false;
+  const rodoviaAlvo = alvo.match(/(?:br|ac)\\d{1,3}/);
+  const rodoviaMapa = mapa.match(/(?:br|ac)\\d{1,3}/);
+  if (rodoviaAlvo) return !!rodoviaMapa && rodoviaAlvo[0] === rodoviaMapa[0];
+  return mapa.includes(alvo) || alvo.includes(mapa);
 }
 
 async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
@@ -250,7 +260,6 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         lon: "-67.824",
         zoom: "13",
         limit: "10",
-        lang: "pt",
       });
       const response = await fetchComTimeout(
         `https://photon.komoot.io/api/?${params.toString()}`,
@@ -258,19 +267,17 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       );
       if (response.ok) {
         const data = await response.json() as { features?: PhotonFeature[] };
-        const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
         const rodoviaLonga = /\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua);
         const candidatos = (data.features ?? []).map((feature) => {
           const prop = feature.properties ?? {};
-          const nomeRua = normalizarNomeRua(prop.street ?? prop.name ?? "");
+          const nomeRua = prop.street ?? prop.name ?? "";
           const bairroMapa = normalizarTexto(
             prop.district ?? prop.suburb ?? prop.neighbourhood ?? prop.locality ?? "",
           );
           const numeroMapa = String(prop.housenumber ?? "").trim();
           const xy = feature.geometry?.coordinates;
-          const ruaConfere = !!nomeRua && !!ruaAlvo &&
-            (nomeRua.includes(ruaAlvo) || ruaAlvo.includes(nomeRua));
+          const ruaConfere = correspondeRua(rua, nomeRua);
           const bairroConfere = !!bairroMapa &&
             (bairroMapa === bairroAlvo || bairroMapa.includes(bairroAlvo) || bairroAlvo.includes(bairroMapa));
           const numeroConfere = !!numeroMapa && numeroMapa === numero;
@@ -281,7 +288,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         }).filter((item) =>
           item.ruaConfere &&
           item.bairroConfere &&
-          item.numeroConfere &&
+          (item.numeroConfere || /\\b(br|ac)[\\s-]*\\d{1,3}\\b/i.test(rua)) &&
           item.coords?.lat !== null &&
           item.coords?.lat !== undefined &&
           item.coords?.lon !== null &&
@@ -326,17 +333,15 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
       const r = await fetchComTimeout(`https://nominatim.openstreetmap.org/search?${tentativas[i]}`);
       if (r.ok) {
         const lista = (await r.json()) as NominatimItem[];
-        const ruaAlvo = normalizarNomeRua(rua);
         const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista
           .map((item) => {
             const endereco = item.address ?? {};
-            const ruaEncontrada = normalizarNomeRua(endereco.road ?? endereco.pedestrian ?? "");
+            const ruaEncontrada = endereco.road ?? endereco.pedestrian ?? "";
             const numeroEncontrado = String(endereco.house_number ?? "").trim();
             const bairrosEncontrados = [endereco.suburb, endereco.neighbourhood, endereco.quarter]
               .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
-            const ruaConfere = !!ruaAlvo && !!ruaEncontrada &&
-              (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
+            const ruaConfere = correspondeRua(rua, ruaEncontrada);
             // Se o cliente informou bairro, só aceitar resultado que confirme esse bairro.
             const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
               b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
@@ -389,13 +394,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
         const bairroAlvo = normalizarTexto(bairro);
         const candidatos = lista.map((item) => {
           const a = item.address ?? {};
-          const ruaEncontrada = normalizarNomeRua(a.road ?? a.pedestrian ?? "");
+          const ruaEncontrada = a.road ?? a.pedestrian ?? "";
           const bairrosEncontrados = [a.suburb, a.neighbourhood, a.quarter]
             .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
           const lat = numeroValido(item.lat);
           const lon = numeroValido(item.lon);
-          const ruaConfere = !!ruaEncontrada &&
-            (ruaEncontrada.includes(ruaAlvo) || ruaAlvo.includes(ruaEncontrada));
+          const ruaConfere = correspondeRua(rua, ruaEncontrada);
           const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
             b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
           return { lat, lon, ruaConfere, bairroConfere,
