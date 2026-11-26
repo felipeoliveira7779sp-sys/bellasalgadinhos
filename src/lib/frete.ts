@@ -424,57 +424,6 @@ export async function buscarSugestoesRua(
   });
 }
 
-async function localizarCentroBairro(
-  p: DadosEndereco,
-): Promise<CoordenadaGeo | null> {
-  if (!p.bairro.trim() || !p.cidade.trim() || !p.uf.trim()) return null;
-  const estado = UF_NOMES[p.uf.toUpperCase()] ?? p.uf;
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    limit: "5",
-    countrycodes: "br",
-    "accept-language": "pt-BR",
-    addressdetails: "1",
-    q: `${p.bairro}, ${p.cidade}, ${estado}, Brasil`,
-  });
-
-  try {
-    const r = await fetchComTimeout(
-      `https://nominatim.openstreetmap.org/search?${params}`,
-      7000,
-    );
-    if (!r.ok) return null;
-    const lista = (await r.json()) as NominatimItem[];
-    const bairroAlvo = normalizarTexto(p.bairro);
-    const cidadeAlvo = normalizarTexto(p.cidade);
-    const estadoAlvo = normalizarTexto(estado);
-    const candidato = lista.find((item) => {
-      const a = item.address ?? {};
-      const bairros = [a.suburb, a.neighbourhood, a.quarter]
-        .map((v) => normalizarTexto(v ?? "")).filter(Boolean);
-      const cidades = [a.city, a.town, a.municipality]
-        .map((v) => normalizarTexto(v ?? "")).filter(Boolean);
-      const estadoMapa = normalizarTexto(a.state ?? "");
-      const bairroConfere = bairros.some((b) =>
-        b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b),
-      );
-      const cidadeConfere = cidades.length === 0 || cidades.some((v) =>
-        v === cidadeAlvo || v.includes(cidadeAlvo) || cidadeAlvo.includes(v),
-      );
-      const estadoConfere = !estadoMapa || estadoMapa === estadoAlvo ||
-        estadoMapa.includes(estadoAlvo) || estadoAlvo.includes(estadoMapa);
-      return bairroConfere && cidadeConfere && estadoConfere &&
-        numeroValido(item.lat) !== null && numeroValido(item.lon) !== null;
-    });
-    if (!candidato) return null;
-    const lat = numeroValido(candidato.lat);
-    const lon = numeroValido(candidato.lon);
-    return lat !== null && lon !== null ? { lat, lon } : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function resolverCoordenadas(
   p: DadosEndereco,
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
