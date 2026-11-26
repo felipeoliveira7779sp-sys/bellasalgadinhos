@@ -513,7 +513,20 @@ export async function resolverCoordenadas(
     const rua = await geocodificar(p);
     if (rua) return rua;
   } catch {
-    // Não substitui o endereço por um ponto aproximado de outra região.
+    // Tenta a coordenada postal somente como último recurso.
+  }
+
+  // Último recurso: coordenada postal devolvida pela consulta do CEP (BrasilAPI).
+  // A interface invalida essa coordenada quando rua/bairro/cidade/UF são editados.
+  // Como representa o trecho postal, e não necessariamente a porta, é estimada.
+  if (
+    p.coords &&
+    Number.isFinite(p.coords.lat) &&
+    Number.isFinite(p.coords.lon) &&
+    p.coords.lat >= -11.5 && p.coords.lat <= -9 &&
+    p.coords.lon >= -69 && p.coords.lon <= -66
+  ) {
+    return { coords: p.coords, estimada: true };
   }
 
   return null;
