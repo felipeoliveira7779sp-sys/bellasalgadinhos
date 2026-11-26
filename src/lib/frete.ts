@@ -231,13 +231,32 @@ function normalizarNomeRua(v: string) {
   return normalizarTexto(v).replace(/^(avenida|av|travessa|tv|rua|alameda|beco|praca|estrada|rodovia)/, "");
 }
 
+// Equivalências confirmadas de nomes usados pelos Correios e pelo mapa em Rio Branco.
+const GRUPOS_VIAS_EQUIVALENTES = [
+  ["ac40", "senadorguiomard", "rodoviasenadorguiomard"],
+  ["estradadasplacas", "estradajarbaspassarinho", "jarbaspassarinho"],
+];
+
 function correspondeRua(entrada: string, encontrada: string): boolean {
   const alvo = normalizarNomeRua(entrada);
   const mapa = normalizarNomeRua(encontrada);
   if (!alvo || !mapa) return false;
+
+  // Primeiro compara nomes alternativos conhecidos da mesma via.
+  const grupoEquivalente = GRUPOS_VIAS_EQUIVALENTES.find((grupo) =>
+    grupo.some((nome) => alvo === nome || alvo.includes(nome) || nome.includes(alvo))
+  );
+  if (grupoEquivalente) {
+    return grupoEquivalente.some((nome) =>
+      mapa === nome || mapa.includes(nome) || nome.includes(mapa)
+    );
+  }
+
+  // Para as demais rodovias, exige o mesmo identificador (ex.: BR-364).
   const rodoviaAlvo = alvo.match(/(?:br|ac)\d{1,3}/);
   const rodoviaMapa = mapa.match(/(?:br|ac)\d{1,3}/);
   if (rodoviaAlvo) return !!rodoviaMapa && rodoviaAlvo[0] === rodoviaMapa[0];
+
   return mapa.includes(alvo) || alvo.includes(mapa);
 }
 
