@@ -2411,3 +2411,149 @@
 @keyframes bella-cart-icon-bounce{0%,78%,100%{transform:translateY(0) rotate(0)}84%{transform:translateY(-5px) rotate(-8deg)}90%{transform:translateY(0) rotate(7deg)}95%{transform:translateY(-2px) rotate(0)}}
 @keyframes bella-button-breathe{0%,100%{box-shadow:0 10px 26px #c66f3235,0 0 0 0 #d9783500}50%{box-shadow:0 13px 30px #c66f3250,0 0 0 5px #d9783518}}
 @media(prefers-reduced-motion:reduce){.bella.menu-page .ember-product-card,.bella.menu-page .ember-product-media .product-add,.bella.menu-page .sticky-nav .nav-item.active,.bella.menu-page .float-cart-bar,.bella.menu-page .float-cart-bar .cart-count,.bella.menu-page .cart-icon,.bella.menu-page .ember-primary-action,.bella.menu-page .ember-hero-stamp{animation:none!important}}
+
+
+/* Carrinho claro: remove superfícies escuras e destaca o resumo dos valores */
+.bella.st-body.menu-page .cart-sheet{
+  background:#fffaf4!important;
+  color:#342b25!important;
+  border:1px solid #efd8c4!important;
+  box-shadow:0 -22px 70px #4b2d1d35!important;
+  color-scheme:light!important;
+}
+.bella.st-body.menu-page .cart-sheet .cart-header{
+  background:linear-gradient(135deg,#fff7ed,#ffead8)!important;
+  border-bottom:1px solid #f0d5bf!important;
+  color:#342b25!important;
+}
+.bella.st-body.menu-page .cart-sheet .cart-kicker{color:#b65b2a!important}
+.bella.st-body.menu-page .cart-sheet .cart-title{color:#342b25!important}
+.bella.st-body.menu-page .cart-sheet .cart-subtitle{color:#806c5d!important}
+.bella.st-body.menu-page .cart-sheet .modal-body{background:#fffaf4!important;color:#342b25!important}
+.bella.st-body.menu-page .cart-sheet .cart-item-row{
+  border-bottom:1px dashed #e8cbb4!important;
+  color:#3e332c!important;
+}
+.bella.st-body.menu-page .cart-sheet .cart-item-row b{color:#3e332c!important}
+.bella.st-body.menu-page .cart-sheet .cart-item-add-text{color:#806c5d!important}
+.bella.st-body.menu-page .cart-sheet .cart-item-choice{color:#b65b2a!important}
+.bella.st-body.menu-page .cart-sheet .cart-item-price{color:#b65b2a!important}
+.bella.st-body.menu-page .cart-sheet .form-section{
+  background:#fff4e9!important;
+  border-color:#efd8c4!important;
+  color:#44362d!important;
+}
+.bella.st-body.menu-page .cart-sheet .form-section h3,
+.bella.st-body.menu-page .cart-sheet .form-section label{color:#44362d!important}
+.bella.st-body.menu-page .cart-sheet .input-control,
+.bella.st-body.menu-page .cart-sheet input,
+.bella.st-body.menu-page .cart-sheet select,
+.bella.st-body.menu-page .cart-sheet textarea{
+  background:#fff!important;
+  color:#342b25!important;
+  border-color:#e8cbb4!important;
+  color-scheme:light!important;
+}
+.bella.st-body.menu-page .cart-sheet .input-control::placeholder,
+.bella.st-body.menu-page .cart-sheet textarea::placeholder{color:#9b897c!important}
+.bella.st-body.menu-page .cart-sheet .receipt-card{
+  background:linear-gradient(145deg,#fff0df,#fff8f0)!important;
+  border:1px solid #e8b98f!important;
+  box-shadow:0 8px 24px #b85f2c12!important;
+}
+.bella.st-body.menu-page .cart-sheet .receipt-line{color:#79675a!important}
+.bella.st-body.menu-page .cart-sheet .receipt-line span:last-child{color:#44362d!important}
+.bella.st-body.menu-page .cart-sheet .receipt-total{
+  color:#a94f20!important;
+  border-top:1px solid #dfb18c!important;
+}
+.bella.st-body.menu-page .cart-sheet .btn-close{
+  background:#fff!important;color:#a94f20!important;border-color:#e8cbb4!important;
+}
+
+/* Tela de boas-vindas que antecede o cardápio */
+.bella.st-body.menu-page .bella-welcome{
+  position:fixed;inset:0;z-index:120;display:grid;place-items:center;
+  min-height:100svh;padding:28px 20px;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,#fff8ed 0%,#f8e6d5 48%,#edc7a8 100%);
+  animation:bella-welcome-fade .55s ease both;
+}
+.bella.st-body.menu-page .bella-welcome:before,
+.bella.st-body.menu-page .bella-welcome:after{
+  content:"";position:absolute;width:min(78vw,650px);height:min(78vw,650px);
+  border:1px solid #d9783538;border-radius:50%;pointer-events:none;
+}
+.bella.st-body.menu-page .bella-welcome:before{transform:scale(1.12)}
+.bella.st-body.menu-page .bella-welcome:after{transform:scale(1.34);border-color:#d978351c}
+.bella.st-body.menu-page .bella-welcome-glow{
+  position:absolute;width:360px;height:360px;border-radius:50%;
+  background:#f5a66b45;filter:blur(70px);animation:bella-welcome-glow 4s ease-in-out infinite alternate;
+}
+.bella.st-body.menu-page .bella-welcome-content{
+  position:relative;z-index:2;width:min(100%,520px);padding:48px 30px;
+  border:1px solid #ffffffd9;border-radius:30px;background:#fffaf2e8;
+  box-shadow:0 28px 90px #8d4d2926;text-align:center;backdrop-filter:blur(18px);
+  animation:bella-welcome-card .8s cubic-bezier(.2,.8,.2,1) both;
+}
+.bella.st-body.menu-page .bella-welcome-logo,
+.bella.st-body.menu-page .bella-welcome-mark{
+  display:grid;width:104px;height:104px;margin:0 auto 22px;place-items:center;
+  border:4px solid #fff;border-radius:50%;object-fit:cover;
+  box-shadow:0 10px 30px #a94f2030,0 0 0 3px #d97835;
+}
+.bella.st-body.menu-page .bella-welcome-mark{
+  background:linear-gradient(145deg,#f5a15d,#c85e2b);color:#fff;
+  font-family:Georgia,serif;font-size:3.2rem;font-weight:800;
+}
+.bella.st-body.menu-page .bella-welcome-mark span{font-size:1.25rem;margin-left:3px}
+.bella.st-body.menu-page .bella-welcome-eyebrow{
+  margin:0 0 10px;color:#a94f20;font-size:.72rem;font-weight:900;letter-spacing:.24em;
+}
+.bella.st-body.menu-page .bella-welcome-content h1{
+  margin:0;color:#39291f;font-family:"Fraunces",Georgia,serif;
+  font-size:clamp(2.5rem,8vw,4.3rem);font-weight:800;letter-spacing:-.045em;line-height:1.02;
+}
+.bella.st-body.menu-page .bella-welcome-message{
+  margin:16px auto 22px;color:#725b4b;font-size:1rem;line-height:1.6;
+}
+.bella.st-body.menu-page .bella-welcome-divider{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:0 auto 28px;color:#a96a43;font-size:.62rem;letter-spacing:.16em;
+}
+.bella.st-body.menu-page .bella-welcome-divider span{width:34px;height:1px;background:#d9a47d}
+.bella.st-body.menu-page .bella-welcome-enter{
+  display:inline-flex;align-items:center;justify-content:center;gap:16px;
+  min-height:58px;padding:0 26px;border:0;border-radius:15px;
+  background:linear-gradient(135deg,#f49a50,#d66b2c);color:#fff;
+  font-size:.94rem;font-weight:900;box-shadow:0 12px 28px #b9572c45;
+  cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;
+  animation:bella-welcome-cta 2.8s ease-in-out infinite;
+}
+.bella.st-body.menu-page .bella-welcome-enter:hover{transform:translateY(-3px);box-shadow:0 17px 34px #b9572c55}
+.bella.st-body.menu-page .bella-welcome-enter span{font-size:1.2rem}
+.bella.st-body.menu-page .bella-welcome-foot{
+  display:block;margin-top:22px;color:#a18a78;font-size:.58rem;font-weight:800;letter-spacing:.13em;
+}
+.bella.st-body.menu-page .bella-welcome-orbit{
+  position:absolute;z-index:1;width:12px;height:12px;border-radius:50%;
+  background:#dc8548;box-shadow:0 0 0 8px #dc85481c,0 0 30px #dc854870;
+}
+.bella.st-body.menu-page .bella-welcome-orbit-one{top:19%;left:17%;animation:bella-orbit-drift 5s ease-in-out infinite}
+.bella.st-body.menu-page .bella-welcome-orbit-two{right:16%;bottom:20%;width:8px;height:8px;animation:bella-orbit-drift 6s 1s ease-in-out infinite reverse}
+@keyframes bella-welcome-fade{from{opacity:0}to{opacity:1}}
+@keyframes bella-welcome-card{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bella-welcome-glow{from{transform:scale(.85);opacity:.55}to{transform:scale(1.18);opacity:1}}
+@keyframes bella-welcome-cta{0%,100%{box-shadow:0 12px 28px #b9572c35}50%{box-shadow:0 15px 34px #b9572c60,0 0 0 6px #d978351a}}
+@keyframes bella-orbit-drift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-18px,0)}}
+@media(max-width:640px){
+  .bella.st-body.menu-page .bella-welcome-content{padding:38px 22px;border-radius:25px}
+  .bella.st-body.menu-page .bella-welcome-logo,.bella.st-body.menu-page .bella-welcome-mark{width:88px;height:88px}
+}
+@media(prefers-reduced-motion:reduce){
+  .bella.st-body.menu-page .bella-welcome,
+  .bella.st-body.menu-page .bella-welcome-content,
+  .bella.st-body.menu-page .bella-welcome-glow,
+  .bella.st-body.menu-page .bella-welcome-enter,
+  .bella.st-body.menu-page .bella-welcome-orbit{animation:none!important}
+}
