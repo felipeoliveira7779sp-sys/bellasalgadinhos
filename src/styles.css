@@ -2033,3 +2033,70 @@
       linear-gradient(0deg,rgba(217,120,53,.15),transparent 62%)!important;
   }
 }
+
+
+/* Ajuste final solicitado: abertura mais marcante e itens do carrinho claros */
+.bella.menu-page .ember-hero{
+  border:2px solid #df8746!important;
+  box-shadow:0 22px 52px #b85f2c30,0 0 0 5px #e58b4926,0 0 38px #d9783530!important;
+}
+.bella.menu-page .ember-hero:after{
+  background:
+    linear-gradient(90deg,rgba(250,248,242,.84) 0%,rgba(250,248,242,.67) 38%,rgba(250,248,242,.25) 72%,rgba(250,248,242,.04) 100%),
+    linear-gradient(0deg,rgba(217,120,53,.24),rgba(217,120,53,.02) 58%)!important;
+}
+.bella.menu-page .ember-hero-shade{
+  background:radial-gradient(ellipse at 78% 48%,#e77e3b58,transparent 42%)!important;
+}
+.bella.menu-page .ember-script{
+  color:#9c4d22!important;
+  font-weight:900!important;
+  text-shadow:0 1px 0 #fff,0 2px 12px #fff9!important;
+}
+.bella.menu-page .ember-display{
+  color:#24251f!important;
+  text-shadow:0 2px 0 #fff9,0 5px 20px #fff8!important;
+}
+.bella.menu-page .ember-hero-description{
+  color:#4c4b44!important;
+  font-weight:650!important;
+  text-shadow:0 1px 8px #fff9!important;
+}
+.bella.menu-page .ember-primary-action{
+  border:1px solid #f3bd91!important;
+  box-shadow:0 12px 30px #c66f3255,0 0 0 4px #d9783525!important;
+}
+.bella.menu-page .store-info-card{
+  border:1.5px solid #e5a16d!important;
+  box-shadow:0 15px 36px #c66f3224,0 0 0 4px #d9783515!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row{
+  border:1px solid #edc7a9!important;
+  background:linear-gradient(135deg,#fffefa 0%,#fff3e8 100%)!important;
+  box-shadow:0 8px 22px #9b592514!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row:hover{
+  border-color:#df925b!important;
+  box-shadow:0 12px 28px #9b592522!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row b{
+  color:#30332d!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row .cart-item-add-text{
+  color:#77736b!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row .cart-item-choice{
+  color:#a95c2b!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row .cart-item-price{
+  color:#bd692f!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row .cart-remove{
+  border:1px solid #edc2a4!important;
+  background:#fff0e5!important;
+  color:#a94f20!important;
+}
+.bella.menu-page .cart-sheet .cart-item-row .cart-remove:hover{
+  background:#fbe0cc!important;
+  border-color:#d98545!important;
+}
