@@ -2566,3 +2566,26 @@
 .bella.st-body.menu-page .bella-welcome-signoff{margin-bottom:0!important;font-weight:700}
 @keyframes bella-welcome-exit{to{opacity:0;visibility:hidden;transform:scale(1.025);pointer-events:none}}
 @media(prefers-reduced-motion:reduce){.bella.st-body.menu-page .bella-welcome{animation:bella-welcome-fade .01s linear both,bella-welcome-exit .35s ease-in 2.35s forwards!important}}
+
+/* Aumenta a leitura das categorias e dos nomes dos produtos, principalmente no celular */
+.bella.st-body.menu-page .sticky-nav .nav-item{
+  font-size:.88rem!important;
+  line-height:1.2;
+  padding-inline:17px;
+}
+.bella.st-body.menu-page .ember-product-card .product-title{
+  font-size:1.02rem!important;
+  line-height:1.3;
+}
+@media(max-width:640px){
+  .bella.st-body.menu-page .sticky-nav .nav-item{
+    font-size:.82rem!important;
+    padding-inline:15px;
+    min-height:42px;
+  }
+  .bella.st-body.menu-page .ember-product-card .product-title{
+    font-size:.94rem!important;
+    line-height:1.3;
+  }
+}
+
