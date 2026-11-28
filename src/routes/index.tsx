@@ -192,6 +192,23 @@ function Cardapio() {
     return () => window.removeEventListener("scroll", atualizar);
   }, [grupos]);
 
+  // Mantém a categoria ativa sempre visível na barra horizontal durante a rolagem.
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".menu-page .sticky-nav");
+    const ativa = nav?.querySelector<HTMLElement>(".nav-item.active");
+    if (!nav || !ativa) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const itemRect = ativa.getBoundingClientRect();
+    const deslocamento = itemRect.left - navRect.left -
+      (nav.clientWidth - ativa.offsetWidth) / 2;
+
+    nav.scrollTo({
+      left: nav.scrollLeft + deslocamento,
+      behavior: "smooth",
+    });
+  }, [categoriaAtiva]);
+
   // Animação de entrada ao rolar a página (somente visual).
   useEffect(() => {
     const elementos = document.querySelectorAll(
@@ -1301,8 +1318,8 @@ function Cardapio() {
           <div className="form-section">
             <h3>Quando deseja receber?</h3>
             <div className="delivery-options">
-              <button type="button" className={`delivery-option ${modoPedido === "agora" ? "selected" : ""}`} onClick={() => { setModoPedido("agora"); setDataPedido(dataLocalRioBranco()); setHorario(""); }}>Pedir agora</button>
               <button type="button" className={`delivery-option ${modoPedido === "agendado" ? "selected" : ""}`} onClick={() => setModoPedido("agendado")}>Agendar pedido</button>
+              <button type="button" className={`delivery-option ${modoPedido === "agora" ? "selected" : ""}`} onClick={() => { setModoPedido("agora"); setDataPedido(dataLocalRioBranco()); setHorario(""); }}>Pedir agora</button>
             </div>
             {modoPedido === "agora" ? <div className="notice notice-info">⏱️ Prazo estimado de preparo: <b>40 a 70 minutos</b>.</div> : (
               <div className="datetime-section">
