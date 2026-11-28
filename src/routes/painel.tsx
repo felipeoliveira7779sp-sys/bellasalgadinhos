@@ -17,6 +17,7 @@ import {
   deleteCategory,
   deleteProduct,
   fetchOrdersReport,
+  cancelOrderFromReport,
   loginAdmin,
   saveCategory,
   saveProduct,
@@ -292,6 +293,7 @@ function PainelConteudo({ password }: { password: string }) {
   const doDeleteProduct = useServerFn(deleteProduct);
   const doUpload = useServerFn(uploadImage);
   const doFetchOrdersReport = useServerFn(fetchOrdersReport);
+  const doCancelOrderFromReport = useServerFn(cancelOrderFromReport);
 
   const [periodoInicio, setPeriodoInicio] = useState(() => hojeISO());
   const [periodoFim, setPeriodoFim] = useState(() => hojeISO());
@@ -301,10 +303,20 @@ function PainelConteudo({ password }: { password: string }) {
     enabled: Boolean(password && periodoInicio && periodoFim && periodoFim >= periodoInicio),
   });
 
-  const pedidosRelatorio = relatorio?.orders ?? [];
+  const todosPedidosRelatorio = relatorio?.orders ?? [];
+  const pedidosCancelados = todosPedidosRelatorio.filter((p: any) => String(p.status ?? "").toLowerCase() === "cancelado");
+  const pedidosRelatorio = todosPedidosRelatorio.filter((p: any) => String(p.status ?? "").toLowerCase() !== "cancelado");
   const faturamentoRelatorio = pedidosRelatorio.reduce((s: number, p: any) => s + Number(p.total ?? 0), 0);
   const freteRelatorio = pedidosRelatorio.reduce((s: number, p: any) => s + Number(p.delivery_fee ?? 0), 0);
   const ticketMedio = pedidosRelatorio.length ? faturamentoRelatorio / pedidosRelatorio.length : 0;
+  async function cancelarPedidoRelatorio(pedido: any) {
+    if (!confirm(`Marcar o pedido de ${pedido.customer_name || "cliente"} como cancelado? Ele deixará de contar nos totais e nas exportações.`)) return;
+    try {
+      await doCancelOrderFromReport({ data: { password, orderId: String(pedido.id) } });
+      flash("Pedido cancelado e retirado dos totais do relatório.");
+      await atualizarRelatorio();
+    } catch (e) { flash(explicarErro(e), true); }
+  }
   const pagamentos = ["Pix", "Cartão", "Dinheiro"].map((forma) => ({
     forma,
     total: pedidosRelatorio.filter((p: any) => textoPagamento(p.payment_method) === forma).reduce((s: number, p: any) => s + Number(p.total ?? 0), 0),
@@ -801,10 +813,10 @@ function PainelConteudo({ password }: { password: string }) {
                 <button type="button" style={btn} onClick={exportarRelatorioCSV}>Exportar planilha CSV</button>
                 <button type="button" style={btnGhost} onClick={() => window.print()}>Imprimir fechamento</button>
               </div>
-              <h3 className="admin-report-list-title">Pedidos do período ({relatorio.totalCount})</h3>
+              <h3 className="admin-report-list-title">Pedidos válidos do período ({pedidosRelatorio.length})</h3>
               <div className="admin-report-table-wrap">
                 <table className="admin-report-table">
-                  <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Tipo</th><th>Total</th></tr></thead>
+                  <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Tipo</th><th>Total</th><th>Ação</th></tr></thead>
                   <tbody>
                     {pedidosRelatorio.map((p: any) => (
                       <tr key={p.id}>
@@ -816,11 +828,11 @@ function PainelConteudo({ password }: { password: string }) {
                         <td><b>{money(Number(p.total ?? 0))}</b></td>
                       </tr>
                     ))}
-                    {!pedidosRelatorio.length ? <tr><td colSpan={6}>Nenhum pedido registrado neste período.</td></tr> : null}
+                    {!pedidosRelatorio.length ? <tr><td colSpan={7}>Nenhum pedido ativo neste período.</td></tr> : null}
                   </tbody>
                 </table>
               </div>
-              <p style={{ ...dica, marginTop: 12, marginBottom: 0 }}>Atenção: o sistema registra o pedido antes de abrir o WhatsApp. Portanto, estes valores representam pedidos registrados, não confirmação de pagamento ou entrega.</p>
+              <p style={{ ...dica, marginTop: 12, marginBottom: 0 }}>Atenção: o sistema registra o pedido antes de abrir o WhatsApp. Marque como cancelado quando o cliente desistir; esses pedidos ficam fora dos indicadores e da exportação. Valores não significam pagamento confirmado. {pedidosCancelados.length ? `${pedidosCancelados.length} pedido(s) cancelado(s) neste período.` : ""}</p>
             </>
           ) : null}
         </section>
