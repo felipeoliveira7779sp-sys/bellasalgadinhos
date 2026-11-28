@@ -436,6 +436,11 @@ function Cardapio() {
   }
 
   async function consultarCepECalcular(cepFormatado: string) {
+    // O CEP passou a ser a referência do endereço: não manter sugestões
+    // que pertenciam à rua digitada anteriormente.
+    cancelarBuscaRua();
+    setSugestoesRua([]);
+    setErroBuscaLocal("");
     const id = ++calcId.current;
     setCalc({ status: "loading", km: null, estimada: false, mensagem: "Buscando o CEP..." });
     try {
@@ -516,10 +521,10 @@ function Cardapio() {
         // Aceita somente resultados cujo logradouro corresponda ao que foi digitado.
         // Remove acentos e prefixos genéricos para comparar nomes de vias.
         const normalizarVia = (texto: string) => texto
-          .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .toLocaleLowerCase("pt-BR")
           .replace(/[^a-z0-9 ]/g, " ")
-          .split(/\\s+/)
+          .split(/\s+/)
           .filter((p) => p && !["rua", "r", "avenida", "av", "travessa", "tv", "estrada", "rodovia", "alameda", "praça", "praca"].includes(p));
         const termosDigitados = normalizarVia(valor);
         const correspondeRua = (nome: string) => {
