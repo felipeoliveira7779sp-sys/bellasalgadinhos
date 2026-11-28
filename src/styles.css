@@ -1941,3 +1941,39 @@
   color:#9b4f20!important;
 }
 
+
+
+/* Bella — acabamento claro no modal de produto (observações e barra de quantidade) */
+.bella.menu-page .product-sheet .obs-box{
+  border:1px solid #e8dfd2!important;
+  background:#fffefa!important;
+  color:#30332d!important;
+  box-shadow:0 5px 16px #40351d0a!important;
+}
+.bella.menu-page .product-sheet .obs-box b{
+  color:#30332d!important;
+}
+.bella.menu-page .product-sheet .modal-footer{
+  border-top:1px solid #e8dfd2!important;
+  background:rgba(255,254,250,.97)!important;
+  color:#30332d!important;
+  box-shadow:0 -8px 24px #40351d0c!important;
+  backdrop-filter:blur(14px);
+}
+.bella.menu-page .product-sheet .qty-controls{
+  border:1px solid #e5dfd3!important;
+  background:#f4f3ee!important;
+  color:#30332d!important;
+}
+.bella.menu-page .product-sheet .qty-btn{
+  background:#fffefa!important;
+  color:#c66f32!important;
+  border:1px solid #ead8c8!important;
+}
+.bella.menu-page .product-sheet .qty-btn:hover{
+  background:#fff0e3!important;
+  border-color:#d98545!important;
+}
+.bella.menu-page .product-sheet .qty-value{
+  color:#30332d!important;
+}
