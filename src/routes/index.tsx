@@ -140,6 +140,7 @@ function Cardapio() {
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
+  const [coordsEntrega, setCoordsEntrega] = useState<CoordenadaGeo | null>(null);
   const [coordsClienteOrigem, setCoordsClienteOrigem] = useState<"gps" | "cep" | null>(null);
   const [localizandoGps, setLocalizandoGps] = useState(false);
   const [calc, setCalc] = useState<CalcFrete>(CALC_VAZIO);
@@ -385,11 +386,14 @@ function Cardapio() {
   }
 
   // ----- Endereço / CEP / cálculo da taxa -----
-  function limparCalculo() {
+  function limparCalculo(limparCoordenadas = true) {
     calcId.current++;
     setCalc(CALC_VAZIO);
-    setCoordsCliente(null);
-    setCoordsClienteOrigem(null);
+    setCoordsEntrega(null);
+    if (limparCoordenadas) {
+      setCoordsCliente(null);
+      setCoordsClienteOrigem(null);
+    }
   }
 
   async function calcular(dados: DadosEndereco, id: number) {
@@ -407,6 +411,7 @@ function Cardapio() {
     try {
       const r = await calcularKmEntrega(lojaCoords, dados);
       if (id !== calcId.current) return;
+      setCoordsEntrega(r.coords);
       setCalc({
         status: r.km > LIMITE_KM ? "fora" : "ok",
         km: r.km,
@@ -478,9 +483,8 @@ function Cardapio() {
     setCep("");
     setSugestoesRua([]);
     setErroBuscaLocal("");
-    setCoordsCliente(null);
-    setCoordsClienteOrigem(null);
-    limparCalculo();
+    const preservarGps = coordsClienteOrigem === "gps";
+    limparCalculo(!preservarGps);
 
     const buscaId = ++buscaRuaId.current;
     if (buscaRuaTimer.current) clearTimeout(buscaRuaTimer.current);
@@ -636,13 +640,26 @@ function Cardapio() {
     if (limparCep(formatado).length === 8) void consultarCepECalcular(formatado);
   }
 
-  // Qualquer edição de rua/bairro/cidade/UF invalida o cálculo anterior
+  // Edições de referências invalidam coordenadas de CEP, mas preservam GPS confirmado.
   function editarEndereco(setter: (v: string) => void, valor: string) {
     setter(valor);
-    // Qualquer ajuste manual invalida coordenadas antigas para evitar frete em outro bairro.
-    setCoordsCliente(null);
-    setCoordsClienteOrigem(null);
-    limparCalculo();
+    const preservarGps = coordsClienteOrigem === "gps";
+    limparCalculo(!preservarGps);
+  }
+
+  // Número e complemento refinam o endereço sem descartar o ponto já obtido por CEP/GPS.
+  function editarNumero(valor: string) {
+    setNumero(valor);
+    calcId.current++;
+    setCalc(CALC_VAZIO);
+    setCoordsEntrega(null);
+  }
+
+  function editarComplemento(valor: string) {
+    setComplemento(valor);
+    calcId.current++;
+    setCalc(CALC_VAZIO);
+    setCoordsEntrega(null);
   }
 
   async function usarLocalizacaoAtual() {
@@ -736,7 +753,10 @@ function Cardapio() {
     const horarioEfetivo = modoPedido === "agora" ? "40-70 min" : horario;
     const [ano, mes, dia] = dataEfetiva.split("-");
     const enderecoCompleto = `${rua}, ${numero}${complemento ? ` - ${complemento}` : ""}, ${bairro}, ${cidade}${uf ? ` - ${uf}` : ""}, Brasil`;
-    const linkMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
+    const coordenadasMapa = coordsEntrega ?? coordsCliente;
+    const linkMapa = coordenadasMapa
+      ? `https://www.google.com/maps?q=${coordenadasMapa.lat},${coordenadasMapa.lon}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     let txt = `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*\n`;
     txt += `👤 *Cliente:* ${nome}\n📱 *Telefone:* ${tel}\n`;
     txt += modoPedido === "agora"
@@ -1272,14 +1292,14 @@ function Cardapio() {
                   style={{ flex: 1 }}
                   placeholder="Número"
                   value={numero}
-                  onChange={(e) => editarEndereco(setNumero, e.target.value)}
+                  onChange={(e) => editarNumero(e.target.value)}
                 />
                 <input
                   className="input-control"
                   style={{ flex: 2 }}
                   placeholder="Complemento (opcional)"
                   value={complemento}
-                  onChange={(e) => setComplemento(e.target.value)}
+                  onChange={(e) => editarComplemento(e.target.value)}
                 />
               </div>
               <div className="input-group">
