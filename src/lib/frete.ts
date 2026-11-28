@@ -163,7 +163,8 @@ export type DadosEndereco = {
   bairro: string;
   cidade: string;
   uf: string;
-  coords: CoordenadaGeo | null; // coordenadas já conhecidas (ex: vindas do CEP)
+  coords: CoordenadaGeo | null; // coordenadas já conhecidas
+  coordsOrigem?: "gps" | "cep";
 };
 
 type PhotonFeature = {
@@ -305,7 +306,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           return { ruaConfere, bairroConfere, numeroConfere, coords };
         }).filter((item) =>
           item.ruaConfere &&
-          item.bairroConfere &&
+          (/(?:br|ac)[\s-]*\d{1,3}/i.test(rua) ? item.bairroConfere : true) &&
           (item.numeroConfere || /\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)) &&
           item.coords?.lat !== null &&
           item.coords?.lat !== undefined &&
@@ -380,7 +381,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             // Para rodovias, não aceita resultado sem bairro confirmado.
             (/\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)
               ? c.bairroInformadoNoMapa && c.bairroConfere
-              : (!c.bairroInformadoNoMapa || c.bairroConfere)))
+              : true))
           .sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -430,7 +431,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           // Rodovias exigem bairro confirmado para evitar trechos rurais distantes.
           (/\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)
             ? item.bairroInformadoNoMapa && item.bairroConfere
-            : (!item.bairroInformadoNoMapa || item.bairroConfere))
+            : true)
         ).sort((a, b) => b.pontos - a.pontos);
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
@@ -525,9 +526,11 @@ export async function buscarSugestoesRua(
 export async function resolverCoordenadas(
   p: DadosEndereco,
 ): Promise<{ coords: CoordenadaGeo; estimada: boolean } | null> {
-  // Usa somente uma localização vinculada à rua informada.
-  // Coordenadas genéricas do CEP ou do centro do bairro podem deslocar
-  // o destino vários quilômetros e reduzir indevidamente a taxa de entrega.
+  // GPS é a localização precisa e tem prioridade máxima.
+  if (p.coordsOrigem === "gps" && p.coords && Number.isFinite(p.coords.lat) && Number.isFinite(p.coords.lon)) {
+    return { coords: p.coords, estimada: false };
+  }
+  // Para endereços digitados, prioriza número exato e depois ponto da rua.
   try {
     const rua = await geocodificar(p);
     if (rua) return rua;
