@@ -2244,3 +2244,143 @@
     bottom:18px!important;
   }
 }
+
+
+/* Experiência mais viva sem exagero: movimentos curtos e elegantes */
+.bella.menu-page .ember-hero-copy{
+  animation:bella-copy-enter .85s cubic-bezier(.2,.8,.2,1) both;
+}
+.bella.menu-page .ember-hero-stamp{
+  animation:bella-stamp-enter .9s .18s cubic-bezier(.2,.8,.2,1) both,bella-stamp-float 5s 1.2s ease-in-out infinite;
+  transform-origin:center;
+}
+.bella.menu-page .store-logo-main{
+  animation:bella-logo-enter .85s .28s cubic-bezier(.2,.8,.2,1) both,bella-logo-float 4.5s 1.2s ease-in-out infinite;
+}
+.bella.menu-page .ember-primary-action{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  transition:transform .22s ease,box-shadow .22s ease,filter .22s ease!important;
+}
+.bella.menu-page .ember-primary-action:after{
+  content:"";
+  position:absolute;
+  inset:-20% auto -20% -45%;
+  width:32%;
+  transform:skewX(-22deg);
+  background:linear-gradient(90deg,transparent,#ffffff88,transparent);
+  animation:bella-cta-shine 5.8s ease-in-out infinite;
+  pointer-events:none;
+}
+.bella.menu-page .ember-primary-action:hover{
+  transform:translateY(-3px) scale(1.025);
+  filter:saturate(1.08);
+  box-shadow:0 15px 32px #b9572c66,0 0 0 5px #e88a4828!important;
+}
+.bella.menu-page .store-info-card{
+  transition:transform .3s ease,box-shadow .3s ease;
+}
+.bella.menu-page .store-info-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 20px 42px #c66f3228!important;
+}
+.bella.menu-page .sticky-nav .nav-item{
+  position:relative;
+  overflow:hidden;
+  transition:background .22s ease,color .22s ease,transform .22s ease,box-shadow .22s ease!important;
+}
+.bella.menu-page .sticky-nav .nav-item:active{
+  transform:scale(.96);
+}
+.bella.menu-page .sticky-nav .nav-item.active{
+  box-shadow:0 7px 18px #c66f3230!important;
+}
+.bella.menu-page .ember-product-card{
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease!important;
+  transform-origin:center;
+}
+.bella.menu-page .ember-product-card:hover:not(:disabled){
+  transform:translateY(-5px);
+}
+.bella.menu-page .ember-product-card:active:not(:disabled){
+  transform:scale(.985);
+}
+.bella.menu-page .ember-product-media img{
+  transition:transform .55s cubic-bezier(.2,.8,.2,1),filter .35s ease!important;
+}
+.bella.menu-page .ember-product-card:hover .ember-product-media img{
+  transform:scale(1.055);
+  filter:saturate(1.07);
+}
+.bella.menu-page .product-add{
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease!important;
+}
+.bella.menu-page .ember-product-card:hover .product-add{
+  transform:translateY(-2px) scale(1.035);
+  filter:saturate(1.1);
+}
+.bella.menu-page .btn-add,
+.bella.menu-page .btn-whatsapp,
+.bella.menu-page .btn-calculate,
+.bella.menu-page .btn-location{
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease!important;
+}
+.bella.menu-page .btn-add:active,
+.bella.menu-page .btn-whatsapp:active,
+.bella.menu-page .btn-calculate:active,
+.bella.menu-page .btn-location:active{
+  transform:scale(.975);
+}
+.bella.menu-page .cart-sheet .cart-item-row{
+  animation:bella-cart-item-arrive .4s cubic-bezier(.2,.8,.2,1) both;
+}
+.bella.menu-page .float-cart-bar{
+  animation:bella-cart-attention 6s 2s ease-in-out infinite;
+}
+@keyframes bella-copy-enter{
+  from{opacity:0;transform:translateY(22px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes bella-stamp-enter{
+  from{opacity:0;transform:translateY(18px) rotate(5deg) scale(.9)}
+  to{opacity:1;transform:translateY(0) rotate(0) scale(1)}
+}
+@keyframes bella-stamp-float{
+  0%,100%{translate:0 0;rotate:0deg}
+  50%{translate:0 -5px;rotate:1deg}
+}
+@keyframes bella-logo-enter{
+  from{opacity:0;transform:scale(.78) rotate(-8deg)}
+  to{opacity:1;transform:scale(1) rotate(0)}
+}
+@keyframes bella-cta-shine{
+  0%,68%,100%{left:-45%}
+  82%{left:125%}
+}
+@keyframes bella-cart-item-arrive{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes bella-cart-attention{
+  0%,88%,100%{box-shadow:0 12px 34px #40351d20,0 0 0 1px #fff8}
+  93%{box-shadow:0 15px 38px #c66f3235,0 0 0 4px #d978351c}
+}
+@media(prefers-reduced-motion:reduce){
+  .bella.menu-page .ember-hero-copy,
+  .bella.menu-page .ember-hero-stamp,
+  .bella.menu-page .store-logo-main,
+  .bella.menu-page .ember-primary-action:after,
+  .bella.menu-page .float-cart-bar,
+  .bella.menu-page .cart-sheet .cart-item-row{
+    animation:none!important;
+  }
+  .bella.menu-page .ember-product-card,
+  .bella.menu-page .ember-product-media img,
+  .bella.menu-page .product-add,
+  .bella.menu-page .sticky-nav .nav-item,
+  .bella.menu-page .store-info-card,
+  .bella.menu-page .ember-primary-action{
+    transition:none!important;
+  }
+}
