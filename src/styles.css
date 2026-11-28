@@ -1554,11 +1554,11 @@
 .bella.menu-page .ember-hero-description{color:#65645d}
 .bella.menu-page .ember-primary-action{
   border:1px solid #9caa8d;
-  background:linear-gradient(135deg,#a8b69a,#84977a);
+  background:linear-gradient(135deg,#ed9a55,#d97835);
   color:#fff;
-  box-shadow:0 9px 24px #7083662b;
+  box-shadow:0 9px 24px #c66f322b;
 }
-.bella.menu-page .ember-primary-action:hover{box-shadow:0 14px 30px #70836640}
+.bella.menu-page .ember-primary-action:hover{box-shadow:0 14px 30px #c66f3240}
 .bella.menu-page .ember-open-state{color:#5e6258}
 .bella.menu-page .ember-open-state i{background:#c87561;box-shadow:0 0 0 5px #c8756120}
 .bella.menu-page .ember-open-state.is-open i{background:#6c9a72;box-shadow:0 0 0 5px #6c9a7220}
@@ -1583,7 +1583,7 @@
   background:#fffdf9;
   color:#65645d;
 }
-.bella.menu-page .store-badges .badge-open{border-color:#b8d0b7;color:#527b58;background:#f3f8f1}
+.bella.menu-page .store-badges .badge-open{border-color:#f2d3bb;color:#a95624;background:#fff3e8}
 .bella.menu-page .store-badges .badge-closed{border-color:#e7c7bb;color:#a75f4d;background:#fff6f2}
 .bella.menu-page .sticky-nav{
   border-color:#e7e1d6;
@@ -1591,17 +1591,17 @@
   box-shadow:0 10px 30px #40351d0d;
 }
 .bella.menu-page .nav-item{color:#77766f}
-.bella.menu-page .nav-item:hover{color:#4e5e49;border-color:#cbd4c2;background:#f6f8f3}
+.bella.menu-page .nav-item:hover{color:#8d4c28;border-color:#f1d7c1;background:#fff7ef}
 .bella.menu-page .nav-item.active{
-  border-color:#9aaa8d;
-  background:linear-gradient(135deg,#a8b69a,#84977a);
+  border-color:#d98545;
+  background:linear-gradient(135deg,#ed9a55,#d97835);
   color:#fff;
-  box-shadow:0 6px 18px #7083662b;
+  box-shadow:0 6px 18px #c66f322b;
 }
 .bella.menu-page .section-title{color:#30332d}
 .bella.menu-page .section-title:before{
-  background:linear-gradient(#b7c4a9,#829578);
-  box-shadow:0 0 18px #84977a35;
+  background:linear-gradient(#f0d4bc,#829578);
+  box-shadow:0 0 18px #d9783535;
 }
 .bella.menu-page .ember-product-card{
   border-color:#e9e3d8;
@@ -1609,8 +1609,8 @@
   box-shadow:0 8px 24px #40351d0b;
 }
 .bella.menu-page .ember-product-card:hover:not(:disabled){
-  border-color:#c7d0bd;
-  box-shadow:0 18px 38px #40351d16,0 0 0 1px #a8b69a18;
+  border-color:#f1d8c2;
+  box-shadow:0 18px 38px #40351d16,0 0 0 1px #ed9a5518;
 }
 .bella.menu-page .ember-product-media{
   background:linear-gradient(145deg,#f0ede5,#e6e1d6);
@@ -1623,12 +1623,12 @@
   background:radial-gradient(circle,#c9b99135,transparent 58%);
 }
 .bella.menu-page .ember-product-media .product-add{
-  border:1px solid #8d9f80;
-  background:linear-gradient(135deg,#a8b69a,#84977a);
+  border:1px solid #df945b;
+  background:linear-gradient(135deg,#ed9a55,#d97835);
   color:#fff;
-  box-shadow:0 6px 18px #5263482b;
+  box-shadow:0 6px 18px #9b4f202b;
 }
-.bella.menu-page .ember-product-card:hover .product-add{box-shadow:0 8px 22px #52634845}
+.bella.menu-page .ember-product-card:hover .product-add{box-shadow:0 8px 22px #9b4f2045}
 .bella.menu-page .ember-product-media .product-unavailable{
   border-color:#e4dbcb;
   background:#fffdf0ed;
@@ -1645,7 +1645,7 @@
 .bella.menu-page .product-sheet,
 .bella.menu-page .cart-sheet{
   border-color:#e6dfd2;
-  background:radial-gradient(ellipse at 85% 0%,#b8c5a51c,transparent 22rem),linear-gradient(160deg,#fffefa,#f5f1e9);
+  background:radial-gradient(ellipse at 85% 0%,#ed9a551c,transparent 22rem),linear-gradient(160deg,#fffefa,#f5f1e9);
   color:#30332d;
   box-shadow:0 -18px 60px #40351d20;
 }
@@ -1674,32 +1674,32 @@
 .bella.menu-page .cart-sheet textarea::placeholder{color:#a09d94}
 .bella.menu-page .cart-sheet .btn-whatsapp,
 .bella.menu-page .btn-add{
-  border:1px solid #9aaa8d!important;
-  background:linear-gradient(135deg,#a8b69a,#84977a)!important;
+  border:1px solid #d98545!important;
+  background:linear-gradient(135deg,#ed9a55,#d97835)!important;
   color:#fff!important;
-  box-shadow:0 8px 20px #70836625;
+  box-shadow:0 8px 20px #c66f3225;
 }
 .bella.menu-page .cart-sheet .btn-whatsapp:hover,
-.bella.menu-page .btn-add:hover{box-shadow:0 12px 26px #7083663b}
+.bella.menu-page .btn-add:hover{box-shadow:0 12px 26px #c66f323b}
 .bella.menu-page .float-cart-bar{
   border:1px solid #d7cdbb;
   background:linear-gradient(110deg,#fffefa,#f1ede4);
   color:#30332d;
   box-shadow:0 12px 34px #40351d20,0 0 0 1px #fff8;
 }
-.bella.menu-page .float-cart-bar .cart-icon{color:#718267}
+.bella.menu-page .float-cart-bar .cart-icon{color:#bd692f}
 .bella.menu-page .float-cart-bar .cart-count{
-  background:#84977a;
+  background:#d97835;
   color:#fff;
 }
 .bella.menu-page .cart-sheet .cart-item-row{border-bottom-color:#e8e1d5}
-.bella.menu-page .cart-sheet .cart-item-price{color:#718267}
+.bella.menu-page .cart-sheet .cart-item-price{color:#bd692f}
 .bella.menu-page .cart-sheet .cart-remove{color:#b46d5c}
 .bella.menu-page .cart-sheet .notice,
 .bella.menu-page .cart-sheet .notice-info{
-  border-color:#dce4d6;
-  background:#f2f6ef;
-  color:#5e7056;
+  border-color:#f4e0cf;
+  background:#fff4ea;
+  color:#8e522d;
 }
 .bella.menu-page .cart-sheet .delivery-option,
 .bella.menu-page .product-sheet .size-option{
@@ -1709,9 +1709,9 @@
 }
 .bella.menu-page .cart-sheet .delivery-option.active,
 .bella.menu-page .product-sheet .size-option.active{
-  border-color:#91a285;
-  background:#eef3e9;
-  color:#526348;
+  border-color:#df945b;
+  background:#fff0e3;
+  color:#9b4f20;
 }
 @media(max-width:640px){
   .bella.menu-page .ember-hero:after{
@@ -1863,5 +1863,47 @@
   background:#fff0e3!important;
   color:#9b4f20!important;
   box-shadow:0 5px 16px #d9854520!important;
+}
+
+/* Paleta laranja aplicada de forma consistente a todos os destaques antes verdes */
+.bella.menu-page .sticky-nav .nav-item.active,
+.bella.menu-page .category-tab.active,
+.bella.menu-page .category-pill.active,
+.bella.menu-page .nav-item[aria-selected="true"]{
+  background:linear-gradient(135deg,#f2a45d,#d97835)!important;
+  border-color:#d98545!important;
+  color:#fff!important;
+  box-shadow:0 5px 16px #c66f322b!important;
+}
+.bella.menu-page .float-cart-bar .cart-icon,
+.bella.menu-page .cart-sheet .cart-item-price,
+.bella.menu-page .receipt-total,
+.bella.menu-page .cart-sheet .form-section h3{
+  color:#bd692f!important;
+}
+.bella.menu-page .float-cart-bar .cart-count{
+  background:#d97835!important;
+  color:#fff!important;
+}
+.bella.menu-page .cart-sheet .notice,
+.bella.menu-page .cart-sheet .notice-info{
+  border-color:#f0d2b8!important;
+  background:#fff4ea!important;
+  color:#8e522d!important;
+}
+.bella.menu-page .cart-sheet .delivery-option.selected,
+.bella.menu-page .product-sheet .size-option.active{
+  border-color:#d98545!important;
+  background:#fff0e3!important;
+  color:#9b4f20!important;
+}
+.bella.menu-page .btn-add,
+.bella.menu-page .cart-sheet .btn-whatsapp,
+.bella.menu-page .btn-calculate,
+.bella.menu-page .btn-location{
+  border-color:#d98545!important;
+  background:linear-gradient(110deg,#f2a45d,#d97835)!important;
+  color:#fff!important;
+  box-shadow:0 8px 20px #c66f3229!important;
 }
 
