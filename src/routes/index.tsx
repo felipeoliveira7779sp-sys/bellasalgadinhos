@@ -913,7 +913,9 @@ function Cardapio() {
       {qtdTotal > 0 ? (
         <button className="float-cart-bar visible" onClick={() => setCartOpen(true)}>
           <span className="cart-left">
-            <span className="cart-count">{qtdTotal}</span> Ver Carrinho
+            <span className="cart-icon" aria-hidden="true">🛒</span>
+            <span className="cart-copy"><strong>Ver carrinho</strong><small>{qtdTotal} {qtdTotal === 1 ? "item no pedido" : "itens no pedido"}</small></span>
+            <span className="cart-count">{qtdTotal}</span>
           </span>
           <span className="cart-total">{money(subtotal)}</span>
         </button>
@@ -1110,7 +1112,11 @@ function Cardapio() {
       <div className={`bottom-sheet cart-sheet ${cartOpen ? "active" : ""}`}>
         <div className="sheet-handle" />
         <div className="cart-header">
-          <span className="cart-title">Resumo do Pedido</span>
+          <div className="cart-heading">
+            <span className="cart-kicker">BELLA SALGADINHOS · SEU PEDIDO</span>
+            <span className="cart-title">Seu carrinho</span>
+            <span className="cart-subtitle">{qtdTotal} {qtdTotal === 1 ? "item selecionado" : "itens selecionados"}</span>
+          </div>
           <button className="btn-close" onClick={() => setCartOpen(false)} aria-label="Fechar carrinho">
             ✕
           </button>
