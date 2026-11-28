@@ -827,23 +827,34 @@ function Cardapio() {
       <div className="app-container">
         <header>
           <div
-            className="store-cover"
+            className="store-cover ember-hero"
             style={store?.cover_url ? { backgroundImage: `url('${store.cover_url}')` } : undefined}
           >
+            <div className="ember-hero-shade" />
+            <div className="ember-hero-copy">
+              <p className="ember-script">Feito com carinho. Servido com sabor.</p>
+              <h1 className="ember-display">{store?.name ?? "Bella Salgadinhos"}</h1>
+              <p className="ember-hero-description">{store?.description || "Escolha seus favoritos e monte seu pedido."}</p>
+              <div className="ember-hero-actions">
+                <a href="#catalogo" className="ember-primary-action">Ver cardápio <span aria-hidden="true">↗</span></a>
+                <span className={aberto ? "ember-open-state is-open" : "ember-open-state"}>
+                  <i /> {aberto ? "Aberto agora" : "Fechado"}
+                </span>
+              </div>
+            </div>
             {store?.logo_url ? (
               <img src={store.logo_url} alt="Logo da Bella Salgadinhos" className="store-logo-main" />
             ) : null}
+            <div className="ember-hero-stamp" aria-hidden="true"><span>BELLA</span><b>♥</b><small>FEITO COM CARINHO</small></div>
           </div>
 
           <div className="store-info-card">
-            <p className="store-eyebrow">Cardápio digital</p>
-            <h1 className="store-name">{store?.name ?? "Bella Salgadinhos"}</h1>
-            <p className="store-desc">{store?.description ?? ""}</p>
+            <p className="store-eyebrow">CARDÁPIO DIGITAL · BELLA SALGADINHOS</p>
             <div className="store-badges">
               <span className={aberto ? "badge-open" : "badge-closed"}>
                 {aberto ? "Aberto Agora" : "Fechado"}
               </span>
-              <span className="badge-delivery">{store?.hours_text ?? "Seg-Sáb: 13h-21h"}</span>
+              <span className="badge-delivery">{store?.hours_text ?? "Consulte nossos horários"}</span>
             </div>
           </div>
         </header>
@@ -862,7 +873,7 @@ function Cardapio() {
           ))}
         </nav>
 
-        <main>
+        <main id="catalogo" className="ember-catalog">
           {isLoading ? (
             <p className="menu-feedback">Carregando cardápio...</p>
           ) : null}
@@ -877,27 +888,30 @@ function Cardapio() {
               <h2 className="section-title">{c.title}</h2>
               {c.items.map((p) => (
                 <button
-                  className={`product-card ${!p.active ? "is-disabled" : ""}`}
+                  className={`product-card ember-product-card ${!p.active ? "is-disabled" : ""}`}
                   key={p.id}
                   onClick={() => openProduct(p)}
                   disabled={!p.active}
                 >
-                  <div className="product-info">
-                    {!p.active && (
-                      <span className="product-unavailable">Indisponível no momento</span>
-                    )}
-                    <h3 className="product-title">{p.name}</h3>
-                    <p className="product-desc">{p.description}</p>
-                    <span className="product-price">
-                      {p.sizes.length > 0 || p._modo ? "A partir de " : ""}
-                      {money(basePrice(p))}
-                    </span>
-                  </div>
-                  <span className="product-side">
+                  <span className="ember-product-media">
                     {p.image_url ? (
-                      <img src={p.image_url} className="product-img" alt={p.name} />
-                    ) : null}
+                      <img src={p.image_url} className="product-img" alt={p.name} loading="lazy" />
+                    ) : (
+                      <span className="ember-image-placeholder" aria-hidden="true">✦</span>
+                    )}
+                    {!p.active ? <span className="product-unavailable">Indisponível</span> : null}
                     <span className="product-add" aria-hidden="true">+</span>
+                  </span>
+                  <span className="product-info">
+                    <span className="product-title">{p.name}</span>
+                    <span className="product-desc">{p.description}</span>
+                    <span className="ember-product-bottom">
+                      <span className="product-price">
+                        {p.sizes.length > 0 || p._modo ? "A partir de " : ""}
+                        {money(basePrice(p))}
+                      </span>
+                      <span className="ember-product-cta">Personalizar <span aria-hidden="true">↗</span></span>
+                    </span>
                   </span>
                 </button>
               ))}
