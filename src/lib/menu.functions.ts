@@ -287,7 +287,7 @@ const orderSchema = z.object({
 const ordersReportSchema = z.object({
   password: z.string(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
 function nextDateISO(value: string) {
