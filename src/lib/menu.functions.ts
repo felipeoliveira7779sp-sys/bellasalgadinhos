@@ -283,6 +283,44 @@ const orderSchema = z.object({
   items: z.array(orderItemSchema).min(1).max(100),
 });
 
+
+const ordersReportSchema = z.object({
+  password: z.string(),
+  startDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),
+  endDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),
+});
+
+function nextDateISO(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + 1));
+  return date.toISOString().slice(0, 10);
+}
+
+// Relatório usa o dia civil de Rio Branco (UTC-05:00), onde a Bella opera.
+export const fetchOrdersReport = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => ordersReportSchema.parse(d))
+  .handler(async ({ data }) => {
+    checkPassword(data.password);
+    if (data.endDate < data.startDate) {
+      throw new Error("A data final não pode ser anterior à data inicial.");
+    }
+    const db = await admin();
+    const start = new Date(`${data.startDate}T00:00:00-05:00`).toISOString();
+    const end = new Date(`${nextDateISO(data.endDate)}T00:00:00-05:00`).toISOString();
+    const { data: rows, error, count } = await db
+      .from("orders")
+      .select(
+        "id, created_at, customer_name, customer_phone, order_type, order_mode, scheduled_date, scheduled_time, payment_method, delivery_fee, surcharge, subtotal, total, items, status",
+        { count: "exact" },
+      )
+      .gte("created_at", start)
+      .lt("created_at", end)
+      .order("created_at", { ascending: false })
+      .range(0, 4999);
+    if (error) throw new Error("Não foi possível carregar os relatórios: " + error.message);
+    return { orders: rows ?? [], totalCount: count ?? 0, truncated: (count ?? 0) > 5000 };
+  });
+
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderSchema.parse(d))
   .handler(async ({ data }) => {
