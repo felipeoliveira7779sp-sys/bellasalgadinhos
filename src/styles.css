@@ -1907,3 +1907,37 @@
   box-shadow:0 8px 20px #c66f3229!important;
 }
 
+/* Remove fundos pretos dos itens e opções quando são selecionados */
+.bella.menu-page .product-sheet .option-row,
+.bella.menu-page .product-sheet .size-option,
+.bella.menu-page .product-sheet .addon-option,
+.bella.menu-page .product-sheet .extra-option,
+.bella.menu-page .product-sheet .option-card{
+  background:#f4f3ee!important;
+  border-color:#dedbd2!important;
+  color:#30332d!important;
+}
+.bella.menu-page .product-sheet .option-row.selected,
+.bella.menu-page .product-sheet .option-row.active,
+.bella.menu-page .product-sheet .size-option.selected,
+.bella.menu-page .product-sheet .size-option.active,
+.bella.menu-page .product-sheet .addon-option.selected,
+.bella.menu-page .product-sheet .addon-option.active,
+.bella.menu-page .product-sheet .extra-option.selected,
+.bella.menu-page .product-sheet .extra-option.active,
+.bella.menu-page .product-sheet .option-card.selected,
+.bella.menu-page .product-sheet .option-card.active,
+.bella.menu-page .product-sheet [aria-checked="true"],
+.bella.menu-page .product-sheet [aria-pressed="true"]{
+  background:#fff0e3!important;
+  border-color:#d98545!important;
+  color:#9b4f20!important;
+  box-shadow:0 0 0 1px #d9854520!important;
+}
+.bella.menu-page .product-sheet input:checked + label,
+.bella.menu-page .product-sheet label:has(input:checked){
+  background:#fff0e3!important;
+  border-color:#d98545!important;
+  color:#9b4f20!important;
+}
+
