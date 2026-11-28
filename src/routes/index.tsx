@@ -175,6 +175,31 @@ function Cardapio() {
     return () => window.removeEventListener("scroll", atualizar);
   }, [grupos]);
 
+  // Animação de entrada ao rolar a página (somente visual).
+  useEffect(() => {
+    const elementos = document.querySelectorAll(
+      ".menu-page .store-info-card, .menu-page .menu-section, .menu-page .product-card",
+    );
+    elementos.forEach((elemento) => elemento.classList.add("bella-reveal"));
+    if (!("IntersectionObserver" in window)) {
+      elementos.forEach((elemento) => elemento.classList.add("is-visible"));
+      return;
+    }
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        entradas.forEach((entrada) => {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("is-visible");
+            observador.unobserve(entrada.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -35px 0px" },
+    );
+    elementos.forEach((elemento) => observador.observe(elemento));
+    return () => observador.disconnect();
+  }, [grupos]);
+
   const isRefri = open?._modo === "refri";
   const isSalgados = open?._modo === "salgados";
   const refriPrecos = open?._refriPrecos ?? {};
