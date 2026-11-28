@@ -929,7 +929,7 @@ function Cardapio() {
           <span className="cart-left">
             <span className="cart-icon" aria-hidden="true">🛒</span>
             <span className="cart-copy"><strong>Ver carrinho</strong><small>{qtdTotal} {qtdTotal === 1 ? "item no pedido" : "itens no pedido"}</small></span>
-            <span className="cart-count">{qtdTotal}</span>
+            <span key={qtdTotal} className="cart-count ember-count-pop">{qtdTotal}</span>
           </span>
           <span className="cart-total">{money(subtotal)}</span>
         </button>
