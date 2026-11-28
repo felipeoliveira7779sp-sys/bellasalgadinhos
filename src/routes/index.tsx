@@ -94,6 +94,7 @@ function Cardapio() {
   });
   const doCreateOrder = useServerFn(createOrder);
   const [enviando, setEnviando] = useState(false);
+  const [introOpen, setIntroOpen] = useState(true);
 
   // Produto aberto
   const [open, setOpen] = useState<ProdutoAgrupado | null>(null);
@@ -854,6 +855,28 @@ function Cardapio() {
 
   return (
     <div className="bella st-body menu-page">
+      {introOpen ? (
+        <section className="bella-welcome" aria-label="Boas-vindas à Bella Salgadinhos">
+          <div className="bella-welcome-glow" aria-hidden="true" />
+          <div className="bella-welcome-content">
+            {store?.logo_url ? (
+              <img className="bella-welcome-logo" src={store.logo_url} alt="Logo da Bella Salgadinhos" />
+            ) : (
+              <div className="bella-welcome-mark" aria-hidden="true">B<span>♥</span></div>
+            )}
+            <p className="bella-welcome-eyebrow">SEJA BEM-VINDO(A)</p>
+            <h1>{store?.name ?? "Bella Salgadinhos"}</h1>
+            <p className="bella-welcome-message">Sabor que acolhe, carinho em cada pedacinho.</p>
+            <div className="bella-welcome-divider"><span /> <b>FEITO COM CARINHO</b> <span /></div>
+            <button type="button" className="bella-welcome-enter" onClick={() => setIntroOpen(false)}>
+              Conhecer nosso cardápio <span aria-hidden="true">↗</span>
+            </button>
+            <small className="bella-welcome-foot">PREPARE-SE PARA ESCOLHER SEUS FAVORITOS</small>
+          </div>
+          <div className="bella-welcome-orbit bella-welcome-orbit-one" aria-hidden="true" />
+          <div className="bella-welcome-orbit bella-welcome-orbit-two" aria-hidden="true" />
+        </section>
+      ) : null}
       <div className="app-container">
         <header>
           <div
