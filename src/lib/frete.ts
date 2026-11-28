@@ -572,7 +572,7 @@ type OsrmResp = { routes?: { distance?: number }[] };
 export async function distanciaRota(
   origem: CoordenadaGeo,
   destino: CoordenadaGeo,
-): Promise<{ km: number; estimada: boolean }> {
+): Promise<{ km: number; estimada: boolean; coords: CoordenadaGeo }> {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${origem.lon},${origem.lat};${destino.lon},${destino.lat}?overview=false&alternatives=true`;
     const r = await fetchComTimeout(url, 7000);
