@@ -1718,3 +1718,74 @@
     background:linear-gradient(90deg,rgba(250,248,242,.96),rgba(250,248,242,.78) 70%,rgba(250,248,242,.42)),linear-gradient(0deg,rgba(250,248,242,.45),transparent 60%);
   }
 }
+
+
+/* Acabamento contemporâneo: tipografia limpa, superfícies suaves e menos ornamento */
+.bella.menu-page .ember-display,
+.bella.menu-page .section-title,
+.bella.menu-page .modal-title,
+.bella.menu-page .cart-title,
+.bella.menu-page .modal-price,
+.bella.menu-page .ember-product-card .product-price{
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  font-weight:800;
+  letter-spacing:-.045em;
+}
+.bella.menu-page .ember-display{
+  font-size:clamp(3.25rem,8vw,6.3rem);
+  line-height:.98;
+  letter-spacing:-.065em;
+}
+.bella.menu-page .section-title{
+  font-size:clamp(1.65rem,3vw,2.25rem);
+  letter-spacing:-.04em;
+}
+.bella.menu-page .ember-script{
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  font-size:.76rem;
+  font-weight:800;
+  font-style:normal;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  transform:none;
+}
+.bella.menu-page .ember-hero-stamp{
+  width:96px;height:96px;
+  border-radius:24px;
+  transform:rotate(0);
+  backdrop-filter:blur(14px);
+}
+.bella.menu-page .ember-hero-stamp span{
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  font-size:1.05rem;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+.bella.menu-page .ember-hero-stamp small{font-size:.43rem;letter-spacing:.09em}
+.bella.menu-page .ember-product-card{border-radius:18px}
+.bella.menu-page .ember-product-media{border-radius:0}
+.bella.menu-page .ember-product-card .product-title{font-weight:750;letter-spacing:-.02em}
+.bella.menu-page .ember-product-card .product-price{font-size:1.18rem;letter-spacing:-.035em}
+.bella.menu-page .ember-product-cta{font-size:.64rem;letter-spacing:.045em}
+.bella.menu-page .sticky-nav{border-radius:15px}
+.bella.menu-page .nav-item{border-radius:10px;font-weight:700;letter-spacing:0}
+.bella.menu-page .ember-primary-action{
+  border-radius:12px;
+  font-size:.75rem;
+  font-weight:800;
+  letter-spacing:.045em;
+  text-transform:none;
+}
+.bella.menu-page .cart-sheet .form-section{border-radius:16px}
+.bella.menu-page .cart-sheet input,
+.bella.menu-page .cart-sheet select,
+.bella.menu-page .cart-sheet textarea{border-radius:12px}
+.bella.menu-page .cart-sheet .btn-whatsapp,
+.bella.menu-page .btn-add{border-radius:12px;text-transform:none;letter-spacing:0;font-weight:800}
+@media(max-width:640px){
+  .bella.menu-page .ember-display{font-size:clamp(3.15rem,14vw,4.8rem)}
+  .bella.menu-page .ember-hero-stamp{width:76px;height:76px;border-radius:19px}
+  .bella.menu-page .ember-hero-stamp span{font-size:.9rem}
+  .bella.menu-page .ember-product-card .product-title{font-size:.8rem}
+  .bella.menu-page .ember-product-card .product-price{font-size:1.02rem}
+}
