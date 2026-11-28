@@ -826,6 +826,7 @@ function PainelConteudo({ password }: { password: string }) {
                         <td>{textoPagamento(p.payment_method)}</td>
                         <td>{p.order_type === "entrega" ? "Entrega" : "Retirada"}</td>
                         <td><b>{money(Number(p.total ?? 0))}</b></td>
+                        <td><button type="button" style={btnGhost} onClick={() => void cancelarPedidoRelatorio(p)}>Cancelar</button></td>
                       </tr>
                     ))}
                     {!pedidosRelatorio.length ? <tr><td colSpan={7}>Nenhum pedido ativo neste período.</td></tr> : null}
