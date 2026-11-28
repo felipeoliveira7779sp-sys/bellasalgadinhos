@@ -213,7 +213,7 @@ function Painel() {
 
   if (!authed) {
     return (
-      <div className="saboretal st-body admin-page admin-login">
+      <div className="bella st-body admin-page admin-login">
         <div className="app-container admin-login-container">
           <div className="admin-login-mark" aria-hidden="true">BS</div>
           <p className="admin-eyebrow">Bella Salgadinhos</p>
@@ -558,7 +558,7 @@ function PainelConteudo({ password }: { password: string }) {
   const semPonto = store !== null && (store.store_lat === null || store.store_lon === null);
 
   return (
-    <div className="saboretal st-body admin-page">
+    <div className="bella st-body admin-page">
       <div className="app-container admin-container">
         <header className="admin-header">
           <p className="admin-eyebrow">Bella Salgadinhos</p>
