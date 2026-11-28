@@ -599,5 +599,5 @@ export async function calcularKmEntrega(
   const destino = await resolverCoordenadas(p);
   if (!destino) throw new Error("Não consegui localizar esse endereço no mapa.");
   const rota = await distanciaRota(origem, destino.coords);
-  return { ...rota, estimada: destino.estimada || rota.estimada };
+  return { ...rota, coords: destino.coords, estimada: destino.estimada || rota.estimada };
 }
