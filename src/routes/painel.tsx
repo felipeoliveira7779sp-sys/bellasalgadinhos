@@ -99,7 +99,7 @@ function deslocarDiaISO(base: string, dias: number) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
 }
 function textoPagamento(valor: unknown) {
-  const v = String(valor ?? "").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  const v = String(valor ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (v.includes("pix")) return "Pix";
   if (v.includes("cart")) return "Cartão";
   if (v.includes("din")) return "Dinheiro";
@@ -344,8 +344,8 @@ function PainelConteudo({ password }: { password: string }) {
       p.order_type, p.order_mode === "agendado" ? `${p.scheduled_date} ${p.scheduled_time}` : "Assim que possível",
       textoPagamento(p.payment_method), resumoItensPedido(p.items), p.subtotal, p.delivery_fee, p.surcharge, p.total, p.status,
     ]);
-    const csv = [cabecalho, ...linhas].map((linha) => linha.map(csvCelula).join(";")).join("\\r\\n");
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const csv = [cabecalho, ...linhas].map((linha) => linha.map(csvCelula).join(";")).join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url; link.download = `bella-relatorio-${periodoInicio}-a-${periodoFim}.csv`;
