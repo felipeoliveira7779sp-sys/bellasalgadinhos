@@ -1789,3 +1789,14 @@
   .bella.menu-page .ember-product-card .product-title{font-size:.8rem}
   .bella.menu-page .ember-product-card .product-price{font-size:1.02rem}
 }
+
+
+/* Oculta a identificação "Edit with Lovable" quando injetada no DOM do site publicado.
+   Regra isolada por ID: não afeta botões, links ou elementos do cardápio. */
+#lovable-badge,
+#lovable-badge *{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
