@@ -318,7 +318,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           item.coords?.lat !== undefined &&
           item.coords?.lon !== null &&
           item.coords?.lon !== undefined
-        ).sort((a, b) => Number(b.bairroConfere) - Number(a.bairroConfere));
+        ).sort((a, b) => {
+          if (a.distanciaCep !== null && b.distanciaCep !== null && a.distanciaCep !== b.distanciaCep) {
+            return a.distanciaCep - b.distanciaCep;
+          }
+          return Number(b.bairroConfere) - Number(a.bairroConfere);
+        });
         const melhor = candidatos[0];
         if (melhor?.coords?.lat != null && melhor.coords.lon != null) {
           return { coords: melhor.coords, estimada: !melhor.numeroConfere };
@@ -394,7 +399,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             (/\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)
               ? c.bairroInformadoNoMapa && c.bairroConfere
               : true))
-          .sort((a, b) => b.pontos - a.pontos);
+          .sort((a, b) => {
+             if (a.distanciaCep !== null && b.distanciaCep !== null && a.distanciaCep !== b.distanciaCep) {
+               return a.distanciaCep - b.distanciaCep;
+             }
+             return b.pontos - a.pontos;
+           });
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined && melhor?.lon !== null && melhor?.lon !== undefined) {
           return { coords: { lat: melhor.lat, lon: melhor.lon }, estimada: false };
