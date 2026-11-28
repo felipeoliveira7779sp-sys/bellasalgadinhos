@@ -595,7 +595,7 @@ export async function distanciaRota(
 export async function calcularKmEntrega(
   origem: CoordenadaGeo,
   p: DadosEndereco,
-): Promise<{ km: number; estimada: boolean }> {
+): Promise<{ km: number; estimada: boolean; coords: CoordenadaGeo }> {
   const destino = await resolverCoordenadas(p);
   if (!destino) throw new Error("Não consegui localizar esse endereço no mapa.");
   const rota = await distanciaRota(origem, destino.coords);
