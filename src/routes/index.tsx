@@ -624,10 +624,14 @@ function Cardapio() {
     setCidade(s.cidade || "Rio Branco");
     setUf(s.uf || "AC");
     setCep(s.cep ? formatarCep(s.cep) : "");
-    // Não usa coordenada aproximada da rua como endereço exato da residência.
-    // O cálculo continuará geocodificando rua + número + bairro confirmados.
-    setCoordsCliente(null);
-    setCoordsClienteOrigem(null);
+    // Se o cliente já confirmou a posição pelo GPS, selecionar/complementar o nome
+    // da via não deve descartar as coordenadas físicas capturadas pelo dispositivo.
+    const preservarGps = coordsClienteOrigem === "gps";
+    if (!preservarGps) {
+      setCoordsCliente(null);
+      setCoordsClienteOrigem(null);
+    }
+    setCoordsEntrega(null);
     calcId.current++;
     setCalc(CALC_VAZIO);
   }
