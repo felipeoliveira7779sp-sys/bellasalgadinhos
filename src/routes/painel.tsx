@@ -16,6 +16,7 @@ import {
 import {
   deleteCategory,
   deleteProduct,
+  fetchOrdersReport,
   loginAdmin,
   saveCategory,
   saveProduct,
@@ -87,6 +88,37 @@ const btnGhost: React.CSSProperties = {
 };
 const dica: React.CSSProperties = { fontSize: "0.75rem", color: "var(--bs-muted)", marginBottom: 8 };
 const subtitulo: React.CSSProperties = { fontWeight: 800, fontSize: "0.85rem", margin: "18px 0 8px", color: "var(--bs-ink)" };
+
+function hojeISO() {
+  const agora = new Date();
+  return `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-${String(agora.getDate()).padStart(2,"0")}`;
+}
+function deslocarDiaISO(base: string, dias: number) {
+  const [ano, mes, dia] = base.split("-").map(Number);
+  const data = new Date(ano, mes - 1, dia + dias);
+  return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
+}
+function textoPagamento(valor: unknown) {
+  const v = String(valor ?? "").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  if (v.includes("pix")) return "Pix";
+  if (v.includes("cart")) return "Cartão";
+  if (v.includes("din")) return "Dinheiro";
+  return String(valor || "Não informado");
+}
+function csvCelula(valor: unknown) {
+  return `"${String(valor ?? "").replace(/"/g, '""')}"`;
+}
+function resumoItensPedido(items: unknown) {
+  if (!Array.isArray(items)) return "";
+  return items.map((item: any) => {
+    const sabores = Array.isArray(item.flavors) ? item.flavors.join(", ") : String(item.flavors ?? "");
+    const saborUnico = item.singleFlavor ? String(item.singleFlavor) : "";
+    const extras = [item.sizeLabel, sabores, saborUnico, item.obs].filter(Boolean).join(" / ");
+    return `${item.qty}x ${item.name}${extras ? ` (${extras})` : ""}`;
+  }).join("; ");
+}
+
+
 
 // ---------------------------------------------------------------------
 // Mensagens de erro em português, com a causa provável
@@ -256,6 +288,69 @@ function PainelConteudo({ password }: { password: string }) {
   const doSaveProduct = useServerFn(saveProduct);
   const doDeleteProduct = useServerFn(deleteProduct);
   const doUpload = useServerFn(uploadImage);
+  const doFetchOrdersReport = useServerFn(fetchOrdersReport);
+
+  const [periodoInicio, setPeriodoInicio] = useState(() => hojeISO());
+  const [periodoFim, setPeriodoFim] = useState(() => hojeISO());
+  const { data: relatorio, isLoading: carregandoRelatorio, error: erroRelatorio, refetch: atualizarRelatorio } = useQuery({
+    queryKey: ["orders-report", password, periodoInicio, periodoFim],
+    queryFn: () => doFetchOrdersReport({ data: { password, startDate: periodoInicio, endDate: periodoFim } }),
+    enabled: Boolean(password && periodoInicio && periodoFim && periodoFim >= periodoInicio),
+  });
+
+  const pedidosRelatorio = relatorio?.orders ?? [];
+  const faturamentoRelatorio = pedidosRelatorio.reduce((s: number, p: any) => s + Number(p.total ?? 0), 0);
+  const freteRelatorio = pedidosRelatorio.reduce((s: number, p: any) => s + Number(p.delivery_fee ?? 0), 0);
+  const ticketMedio = pedidosRelatorio.length ? faturamentoRelatorio / pedidosRelatorio.length : 0;
+  const pagamentos = ["Pix", "Cartão", "Dinheiro"].map((forma) => ({
+    forma,
+    total: pedidosRelatorio.filter((p: any) => textoPagamento(p.payment_method) === forma).reduce((s: number, p: any) => s + Number(p.total ?? 0), 0),
+    quantidade: pedidosRelatorio.filter((p: any) => textoPagamento(p.payment_method) === forma).length,
+  }));
+  const entregas = pedidosRelatorio.filter((p: any) => p.order_type === "entrega").length;
+  const retiradas = pedidosRelatorio.filter((p: any) => p.order_type === "retirada").length;
+  const rankingProdutos = (() => {
+    const mapa = new Map<string, number>();
+    pedidosRelatorio.forEach((pedido: any) => (Array.isArray(pedido.items) ? pedido.items : []).forEach((item: any) => {
+      const nome = String(item.name ?? "Produto");
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(item.qty ?? 0));
+    }));
+    return [...mapa.entries()].sort((a,b) => b[1]-a[1]).slice(0,5);
+  })();
+  const rankingSabores = (() => {
+    const mapa = new Map<string, number>();
+    pedidosRelatorio.forEach((pedido: any) => (Array.isArray(pedido.items) ? pedido.items : []).forEach((item: any) => {
+      const sabores = [
+        ...(Array.isArray(item.flavors) ? item.flavors : typeof item.flavors === "string" ? [item.flavors] : []),
+        ...(item.singleFlavor ? [String(item.singleFlavor)] : []),
+        ...(item.choices && typeof item.choices === "object" ? Object.values(item.choices) : []),
+      ];
+      sabores.filter(Boolean).forEach((sabor) => mapa.set(String(sabor), (mapa.get(String(sabor)) ?? 0) + Number(item.qty ?? 0)));
+    }));
+    return [...mapa.entries()].sort((a,b) => b[1]-a[1]).slice(0,5);
+  })();
+
+  function aplicarPeriodo(tipo: "hoje" | "7dias" | "mes") {
+    const fim = hojeISO();
+    if (tipo === "hoje") { setPeriodoInicio(fim); setPeriodoFim(fim); return; }
+    if (tipo === "7dias") { setPeriodoInicio(deslocarDiaISO(fim, -6)); setPeriodoFim(fim); return; }
+    setPeriodoInicio(`${fim.slice(0,7)}-01`);
+    setPeriodoFim(fim);
+  }
+  function exportarRelatorioCSV() {
+    const cabecalho = ["ID","Data/hora do registro","Cliente","Telefone","Tipo","Agendamento","Pagamento","Itens","Subtotal","Frete","Taxa adicional","Total","Status"];
+    const linhas = pedidosRelatorio.map((p: any) => [
+      p.id, new Date(p.created_at).toLocaleString("pt-BR"), p.customer_name, p.customer_phone,
+      p.order_type, p.order_mode === "agendado" ? `${p.scheduled_date} ${p.scheduled_time}` : "Assim que possível",
+      textoPagamento(p.payment_method), resumoItensPedido(p.items), p.subtotal, p.delivery_fee, p.surcharge, p.total, p.status,
+    ]);
+    const csv = [cabecalho, ...linhas].map((linha) => linha.map(csvCelula).join(";")).join("\\r\\n");
+    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = `bella-relatorio-${periodoInicio}-a-${periodoFim}.csv`;
+    link.click(); URL.revokeObjectURL(url);
+  }
 
   const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const [store, setStore] = useState<Store | null>(null);
@@ -642,6 +737,90 @@ function PainelConteudo({ password }: { password: string }) {
             </button>
           </div>
         ) : null}
+
+
+        {/* ---------- Relatórios & vendas ---------- */}
+        <section className="admin-reports" style={{ ...secao, padding: 20 }}>
+          <div style={{ padding: "0 0 14px" }}>
+            <p className="admin-eyebrow" style={{ marginBottom: 5 }}>VISÃO DO NEGÓCIO</p>
+            <h2 className="admin-section-heading" style={{ padding: 0, cursor: "default" }}>📊 Relatórios &amp; vendas</h2>
+            <p style={{ ...dica, marginTop: 8, marginBottom: 0 }}>Resumo dos pedidos registrados no cardápio no período selecionado.</p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <button type="button" style={btnGhost} onClick={() => aplicarPeriodo("hoje")}>Hoje</button>
+            <button type="button" style={btnGhost} onClick={() => aplicarPeriodo("7dias")}>Últimos 7 dias</button>
+            <button type="button" style={btnGhost} onClick={() => aplicarPeriodo("mes")}>Este mês</button>
+          </div>
+          <div className="admin-report-dates">
+            <label style={{ ...dica, display: "block" }}>Data inicial
+              <input aria-label="Data inicial do relatório" type="date" style={{ ...input, display: "block", marginTop: 5 }} value={periodoInicio} max={periodoFim || undefined} onChange={(e) => setPeriodoInicio(e.target.value)} />
+            </label>
+            <label style={{ ...dica, display: "block" }}>Data final
+              <input aria-label="Data final do relatório" type="date" style={{ ...input, display: "block", marginTop: 5 }} value={periodoFim} min={periodoInicio || undefined} onChange={(e) => setPeriodoFim(e.target.value)} />
+            </label>
+            <button type="button" style={btnGhost} onClick={() => void atualizarRelatorio()} disabled={carregandoRelatorio}>Atualizar</button>
+          </div>
+          {carregandoRelatorio ? <p style={dica}>Carregando os pedidos...</p> : null}
+          {erroRelatorio ? <p className="admin-error">Não foi possível carregar os relatórios. Confira a conexão e tente atualizar.</p> : null}
+          {relatorio ? (
+            <>
+              <div className="admin-report-kpis">
+                {[
+                  ["Faturamento registrado", money(faturamentoRelatorio)],
+                  ["Pedidos registrados", String(relatorio.totalCount)],
+                  ["Ticket médio", money(ticketMedio)],
+                  ["Frete registrado", money(freteRelatorio)],
+                ].map(([label, value]) => (
+                  <div className="admin-report-kpi" key={label}><span>{label}</span><strong>{value}</strong></div>
+                ))}
+              </div>
+              {relatorio.truncated ? <p style={dica}>Este período tem mais de 5.000 pedidos; a lista e os totais exibidos consideram os 5.000 mais recentes. Reduza o período para conferir todos.</p> : null}
+              <div className="admin-report-columns">
+                <div className="admin-report-panel">
+                  <h3>Vendas por pagamento</h3>
+                  {pagamentos.map((p) => <div className="admin-report-line" key={p.forma}><span>{p.forma} <small>({p.quantidade})</small></span><b>{money(p.total)}</b></div>)}
+                </div>
+                <div className="admin-report-panel">
+                  <h3>Entrega x retirada</h3>
+                  <div className="admin-report-line"><span>Entrega</span><b>{entregas} ({pedidosRelatorio.length ? Math.round(entregas/pedidosRelatorio.length*100) : 0}%)</b></div>
+                  <div className="admin-report-line"><span>Retirada</span><b>{retiradas} ({pedidosRelatorio.length ? Math.round(retiradas/pedidosRelatorio.length*100) : 0}%)</b></div>
+                </div>
+                <div className="admin-report-panel">
+                  <h3>Produtos mais vendidos</h3>
+                  {rankingProdutos.length ? rankingProdutos.map(([nome, qtd]) => <div className="admin-report-line" key={nome}><span>{nome}</span><b>{qtd}</b></div>) : <p style={dica}>Sem itens no período.</p>}
+                </div>
+                <div className="admin-report-panel">
+                  <h3>Sabores mais escolhidos</h3>
+                  {rankingSabores.length ? rankingSabores.map(([nome, qtd]) => <div className="admin-report-line" key={nome}><span>{nome}</span><b>{qtd}</b></div>) : <p style={dica}>Não há sabores detalhados nesses pedidos.</p>}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0" }} className="admin-report-actions">
+                <button type="button" style={btn} onClick={exportarRelatorioCSV}>Exportar planilha CSV</button>
+                <button type="button" style={btnGhost} onClick={() => window.print()}>Imprimir fechamento</button>
+              </div>
+              <h3 className="admin-report-list-title">Pedidos do período ({relatorio.totalCount})</h3>
+              <div className="admin-report-table-wrap">
+                <table className="admin-report-table">
+                  <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Tipo</th><th>Total</th></tr></thead>
+                  <tbody>
+                    {pedidosRelatorio.map((p: any) => (
+                      <tr key={p.id}>
+                        <td>{new Date(p.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                        <td><b>{p.customer_name}</b><small>{p.customer_phone}</small></td>
+                        <td>{resumoItensPedido(p.items)}</td>
+                        <td>{textoPagamento(p.payment_method)}</td>
+                        <td>{p.order_type === "entrega" ? "Entrega" : "Retirada"}</td>
+                        <td><b>{money(Number(p.total ?? 0))}</b></td>
+                      </tr>
+                    ))}
+                    {!pedidosRelatorio.length ? <tr><td colSpan={6}>Nenhum pedido registrado neste período.</td></tr> : null}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ ...dica, marginTop: 12, marginBottom: 0 }}>Atenção: o sistema registra o pedido antes de abrir o WhatsApp. Portanto, estes valores representam pedidos registrados, não confirmação de pagamento ou entrega.</p>
+            </>
+          ) : null}
+        </section>
 
         {/* ---------- Dados da loja ---------- */}
         {store ? (
