@@ -798,7 +798,7 @@ function Cardapio() {
   const semPonto = !lojaCoords;
 
   return (
-    <div className="saboretal st-body menu-page">
+    <div className="bella st-body menu-page">
       <div className="app-container">
         <header>
           <div
