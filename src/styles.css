@@ -1337,7 +1337,7 @@
 @keyframes bella-cart-shine{0%,65%,100%{transform:translateX(-130%)}82%{transform:translateX(130%)}}
 @keyframes bella-cart-icon{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(-5deg)}}
 @keyframes bella-count-breathe{0%,100%{box-shadow:0 0 0 3px #fff2}50%{box-shadow:0 0 0 5px #fff1,0 0 18px #fff5}}
-@keyframes bella-cart-drawer{from{opacity:.65;transform:translateY(35px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bella-cart-drawer{from{opacity:.65;transform:translate(-50%,35px) scale(.99)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 @keyframes bella-cart-item-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bella-receipt-glow{0%,100%{opacity:.35;transform:scaleX(.6)}50%{opacity:1;transform:scaleX(1)}}
 @keyframes bella-checkout-breathe{0%,100%{box-shadow:0 12px 30px #c98a2b38}50%{box-shadow:0 15px 38px #e5ad4359,0 0 0 4px #e5ad4310}}
@@ -1449,3 +1449,79 @@
 @keyframes ember-count-pop{0%{transform:scale(.55);opacity:.35}65%{transform:scale(1.22)}100%{transform:scale(1);opacity:1}}
 @keyframes ember-cart-rock{0%,100%{transform:rotate(0) translateY(0)}18%{transform:rotate(-8deg) translateY(-2px)}36%{transform:rotate(6deg)}54%{transform:rotate(0) translateY(0)}}
 @media(prefers-reduced-motion:reduce){.bella.menu-page .ember-count-pop,.bella.menu-page .cart-icon{animation:none!important}}
+
+
+/* Correção do drawer do checkout: preservar centralização horizontal durante a animação */
+.bella.menu-page .cart-sheet{
+  box-sizing:border-box;
+  left:50%;
+  width:min(100%,680px);
+  max-width:680px;
+  right:auto;
+  transform:translate(-50%,102%);
+}
+.bella.menu-page .cart-sheet.active{
+  transform:translate(-50%,0);
+}
+.bella.menu-page .cart-sheet .modal-body,
+.bella.menu-page .cart-sheet .form-section,
+.bella.menu-page .cart-sheet .input-group,
+.bella.menu-page .cart-sheet .input-control,
+.bella.menu-page .cart-sheet .notice,
+.bella.menu-page .cart-sheet .delivery-options,
+.bella.menu-page .cart-sheet .datetime-section{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+}
+.bella.menu-page .cart-sheet .input-control{
+  width:100%;
+}
+.bella.menu-page .cart-sheet .delivery-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.bella.menu-page .cart-sheet .delivery-option{
+  min-width:0;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+@media(max-width:680px){
+  .bella.menu-page .cart-sheet{
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    max-width:none;
+    max-height:94dvh;
+    border-left:0;
+    border-right:0;
+    border-radius:24px 24px 0 0;
+    transform:translateY(102%);
+  }
+  .bella.menu-page .cart-sheet.active{
+    transform:translateY(0);
+  }
+  @keyframes bella-cart-drawer{
+    from{opacity:.65;transform:translateY(35px) scale(.99)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .bella.menu-page .cart-sheet .modal-body{
+    width:100%;
+    max-height:calc(94dvh - 105px);
+    padding:14px 14px calc(28px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  .bella.menu-page .cart-header{
+    width:100%;
+    box-sizing:border-box;
+    padding-inline:16px;
+  }
+  .bella.menu-page .cart-heading{min-width:0;max-width:calc(100% - 54px)}
+  .bella.menu-page .cart-kicker{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.12em}
+  .bella.menu-page .cart-sheet .form-section{width:100%;padding:14px}
+  .bella.menu-page .cart-sheet .input-group{width:100%}
+  .bella.menu-page .cart-sheet .datetime-section{grid-template-columns:minmax(0,1fr)}
+}
