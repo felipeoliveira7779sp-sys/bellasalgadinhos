@@ -782,7 +782,7 @@ function PainelConteudo({ password }: { password: string }) {
               <div className="admin-report-kpis">
                 {[
                   ["Faturamento registrado", money(faturamentoRelatorio)],
-                  ["Pedidos registrados", String(relatorio.totalCount)],
+                  ["Pedidos registrados", String(pedidosRelatorio.length)],
                   ["Ticket médio", money(ticketMedio)],
                   ["Frete registrado", money(freteRelatorio)],
                 ].map(([label, value]) => (
@@ -790,6 +790,12 @@ function PainelConteudo({ password }: { password: string }) {
                 ))}
               </div>
               {relatorio.truncated ? <p style={dica}>Este período tem mais de 5.000 pedidos; a lista e os totais exibidos consideram os 5.000 mais recentes. Reduza o período para conferir todos.</p> : null}
+              <details className="admin-report-details">
+                <summary style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", border: "1px solid var(--bs-line)", borderRadius: 12, background: "var(--bs-surface-soft)", color: "var(--bs-ink)", fontWeight: 800, cursor: "pointer", listStyle: "none" }}>
+                  <span>Ver detalhes completos do relatório</span>
+                  <span aria-hidden="true" style={{ color: "var(--bs-brand)", fontSize: "1.2rem" }}>⌄</span>
+                </summary>
+                <div style={{ paddingTop: 14 }}>
               <div className="admin-report-columns">
                 <div className="admin-report-panel">
                   <h3>Vendas por pagamento</h3>
@@ -834,6 +840,8 @@ function PainelConteudo({ password }: { password: string }) {
                 </table>
               </div>
               <p style={{ ...dica, marginTop: 12, marginBottom: 0 }}>Atenção: o sistema registra o pedido antes de abrir o WhatsApp. Marque como cancelado quando o cliente desistir; esses pedidos ficam fora dos indicadores e da exportação. Valores não significam pagamento confirmado. {pedidosCancelados.length ? `${pedidosCancelados.length} pedido(s) cancelado(s) neste período.` : ""}</p>
+                </div>
+              </details>
             </>
           ) : null}
         </section>
