@@ -96,6 +96,11 @@ function Cardapio() {
   const [enviando, setEnviando] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
 
+  useEffect(() => {
+    const introTimer = window.setTimeout(() => setIntroOpen(false), 1650);
+    return () => window.clearTimeout(introTimer);
+  }, []);
+
   // Produto aberto
   const [open, setOpen] = useState<ProdutoAgrupado | null>(null);
   const [sizeIdx, setSizeIdx] = useState(0);
@@ -868,10 +873,7 @@ function Cardapio() {
             <h1>{store?.name ?? "Bella Salgadinhos"}</h1>
             <p className="bella-welcome-message">Sabor que acolhe, carinho em cada pedacinho.</p>
             <div className="bella-welcome-divider"><span /> <b>FEITO COM CARINHO</b> <span /></div>
-            <button type="button" className="bella-welcome-enter" onClick={() => setIntroOpen(false)}>
-              Conhecer nosso cardápio <span aria-hidden="true">↗</span>
-            </button>
-            <small className="bella-welcome-foot">PREPARE-SE PARA ESCOLHER SEUS FAVORITOS</small>
+            <p className="bella-welcome-message bella-welcome-signoff">Seu momento delicioso começa agora.</p>
           </div>
           <div className="bella-welcome-orbit bella-welcome-orbit-one" aria-hidden="true" />
           <div className="bella-welcome-orbit bella-welcome-orbit-two" aria-hidden="true" />
