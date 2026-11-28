@@ -125,7 +125,7 @@ function Cardapio() {
     const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
     return `${valor("year")}-${valor("month")}-${valor("day")}`;
   };
-  const [modoPedido, setModoPedido] = useState<"agora" | "agendado">("agora");
+  const [modoPedido, setModoPedido] = useState<"agora" | "agendado">("agendado");
   const [dataPedido, setDataPedido] = useState(() => dataLocalRioBranco());
   const [horario, setHorario] = useState("");
   const [pagamento, setPagamento] = useState("");
