@@ -236,7 +236,7 @@ function normalizarNomeRua(v: string) {
 const GRUPOS_VIAS_EQUIVALENTES = [
   ["ac40", "senadorguiomard", "rodoviasenadorguiomard"],
   ["estradadasplacas", "estradajarbaspassarinho", "jarbaspassarinho"],
-  ["saosebastiao", "rosadesaron"],
+  ["saosebastiao", "rosadesaron", "esperanca"],
 ];
 
 function correspondeRua(entrada: string, encontrada: string): boolean {
