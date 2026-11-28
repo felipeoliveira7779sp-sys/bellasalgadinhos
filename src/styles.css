@@ -983,3 +983,180 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ==========================================================
+   BELLA — acabamento premium e movimento (camada visual)
+   Não altera estados, handlers, integrações ou regras comerciais.
+   ========================================================== */
+.saboretal {
+  --bs-brand: oklch(0.76 0.145 68);
+  --bs-brand-strong: oklch(0.67 0.16 55);
+  --bs-bg: oklch(0.13 0.012 65);
+  --bs-card: oklch(0.18 0.014 65);
+  --bs-surface: oklch(0.22 0.018 65);
+  --bs-surface-soft: oklch(0.16 0.012 65);
+  --bs-line: oklch(0.3 0.022 65);
+  --bs-line-strong: oklch(0.42 0.04 65);
+  background:
+    radial-gradient(ellipse at 50% -12%, color-mix(in oklab, var(--bs-brand) 15%, transparent), transparent 38rem),
+    radial-gradient(ellipse at 100% 35%, color-mix(in oklab, var(--bs-brand) 5%, transparent), transparent 30rem),
+    var(--bs-bg);
+}
+
+.saboretal .store-cover {
+  isolation: isolate;
+  border-color: color-mix(in oklab, var(--bs-brand) 30%, var(--bs-line));
+  box-shadow: 0 28px 85px color-mix(in oklab, var(--bs-overlay) 70%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--bs-brand) 8%, transparent);
+  animation: bella-hero-arrive 850ms cubic-bezier(.2,.75,.25,1) both;
+}
+.saboretal .store-cover::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 15%, color-mix(in oklab, white 12%, transparent) 48%, transparent 72%);
+  background-size: 220% 100%;
+  animation: bella-cover-shimmer 9s ease-in-out infinite;
+  opacity: .38;
+}
+.saboretal .store-logo-main {
+  animation: bella-logo-float 5s ease-in-out infinite;
+  box-shadow: 0 14px 38px var(--bs-overlay), 0 0 0 1px color-mix(in oklab, var(--bs-brand) 22%, transparent);
+}
+.saboretal .store-info-card {
+  border-color: color-mix(in oklab, var(--bs-brand) 18%, var(--bs-line));
+  box-shadow: 0 22px 65px color-mix(in oklab, var(--bs-overlay) 55%, transparent);
+  animation: bella-info-arrive 700ms 120ms cubic-bezier(.2,.75,.25,1) both;
+}
+.saboretal .store-name,
+.saboretal .section-title,
+.saboretal .modal-title,
+.saboretal .cart-title {
+  text-wrap: balance;
+}
+.saboretal .sticky-nav {
+  border-color: color-mix(in oklab, var(--bs-brand) 18%, var(--bs-line));
+  background: color-mix(in oklab, var(--bs-card) 82%, transparent);
+  backdrop-filter: blur(22px) saturate(1.25);
+}
+.saboretal .nav-item { position: relative; }
+.saboretal .nav-item.active {
+  box-shadow: 0 7px 22px color-mix(in oklab, var(--bs-brand) 24%, transparent);
+}
+.saboretal .product-card {
+  border-color: color-mix(in oklab, var(--bs-line) 82%, transparent);
+  box-shadow: 0 12px 32px color-mix(in oklab, var(--bs-overlay) 25%, transparent);
+  animation: bella-card-arrive 600ms both;
+}
+.saboretal .product-card:nth-of-type(2) { animation-delay: 45ms; }
+.saboretal .product-card:nth-of-type(3) { animation-delay: 90ms; }
+.saboretal .product-card:nth-of-type(4) { animation-delay: 135ms; }
+.saboretal .product-card:nth-of-type(5) { animation-delay: 180ms; }
+.saboretal .product-card:nth-of-type(n+6) { animation-delay: 210ms; }
+.saboretal .product-img {
+  transition: transform 420ms cubic-bezier(.2,.75,.25,1), filter 420ms ease;
+}
+.saboretal .product-card:hover .product-img {
+  transform: scale(1.045);
+  filter: saturate(1.08);
+}
+.saboretal .product-add {
+  transition: transform 220ms cubic-bezier(.2,.75,.25,1), box-shadow 220ms ease;
+}
+.saboretal .product-card:hover .product-add {
+  transform: rotate(90deg) scale(1.08);
+  box-shadow: 0 7px 20px color-mix(in oklab, var(--bs-brand) 30%, var(--bs-overlay));
+}
+.saboretal .float-cart-bar {
+  box-shadow: 0 18px 48px color-mix(in oklab, var(--bs-brand) 28%, var(--bs-overlay)),
+    0 0 0 1px color-mix(in oklab, white 12%, transparent) inset;
+  transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+}
+.saboretal .float-cart-bar:hover {
+  transform: translate(-50%, -3px);
+  box-shadow: 0 22px 56px color-mix(in oklab, var(--bs-brand) 34%, var(--bs-overlay));
+}
+.saboretal .bottom-sheet {
+  border-color: color-mix(in oklab, var(--bs-brand) 20%, var(--bs-line));
+  box-shadow: 0 -28px 90px color-mix(in oklab, var(--bs-overlay) 82%, transparent);
+}
+.saboretal .btn-add,
+.saboretal .btn-whatsapp,
+.saboretal .btn-location,
+.saboretal .btn-calculate,
+.saboretal .size-option,
+.saboretal .delivery-option,
+.saboretal .option-row,
+.saboretal .qty-btn {
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease,
+    box-shadow 180ms ease, filter 180ms ease;
+}
+.saboretal .btn-add:hover,
+.saboretal .btn-whatsapp:hover,
+.saboretal .btn-location:hover,
+.saboretal .btn-calculate:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.saboretal .st-body details > summary { transition: color 180ms ease; }
+.saboretal .st-body details > summary:hover { color: var(--bs-brand); }
+.saboretal .st-body input,
+.saboretal .st-body textarea,
+.saboretal .st-body select {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.saboretal .st-body input:focus,
+.saboretal .st-body textarea:focus,
+.saboretal .st-body select:focus {
+  border-color: var(--bs-brand) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--bs-brand) 13%, transparent);
+  outline: none;
+}
+.saboretal .st-body button:not(:disabled) { transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease; }
+.saboretal .st-body button:not(:disabled):active { transform: scale(.98); }
+.saboretal .st-body button:disabled { cursor: not-allowed; opacity: .55; }
+
+@keyframes bella-hero-arrive {
+  from { opacity: 0; transform: translateY(18px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes bella-info-arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bella-card-arrive {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bella-cover-shimmer {
+  0%, 72%, 100% { background-position: 140% 0; }
+  84% { background-position: -30% 0; }
+}
+@keyframes bella-logo-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+
+@media (min-width: 900px) {
+  .saboretal .app-container { max-width: 980px; }
+  .saboretal .store-cover { height: 360px; margin-inline: 20px; }
+  .saboretal .store-info-card { margin-inline: 70px; }
+  .saboretal .menu-section { padding-inline: 24px; }
+  .saboretal .product-card { min-height: 158px; padding: 18px 20px; }
+  .saboretal .product-img { width: 136px; height: 136px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saboretal *,
+  .saboretal *::before,
+  .saboretal *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
