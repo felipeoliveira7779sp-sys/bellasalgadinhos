@@ -42,48 +42,51 @@ export const Route = createFileRoute("/painel")({
 // Estilos
 // ---------------------------------------------------------------------
 const card: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 12,
-  padding: 16,
+  background: "var(--bs-card)",
+  border: "1px solid var(--bs-line)",
+  borderRadius: 18,
+  padding: 20,
   marginBottom: 16,
 };
 const secao: React.CSSProperties = { ...card, padding: 0, overflow: "hidden" };
 const secaoTitulo: React.CSSProperties = {
-  padding: "14px 16px",
-  fontWeight: 700,
-  fontSize: "1rem",
+  padding: "18px 20px",
+  color: "var(--bs-ink)",
+  fontWeight: 800,
+  fontSize: "0.98rem",
   cursor: "pointer",
 };
-const secaoCorpo: React.CSSProperties = { padding: "0 16px 16px" };
+const secaoCorpo: React.CSSProperties = { padding: "4px 20px 20px" };
 const input: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #d1d5db",
-  borderRadius: 8,
-  padding: 10,
+  border: "1px solid var(--bs-line)",
+  borderRadius: 11,
+  padding: 11,
+  background: "var(--bs-surface-soft)",
+  color: "var(--bs-ink)",
   fontSize: "0.9rem",
   marginBottom: 8,
 };
 const btn: React.CSSProperties = {
-  background: "linear-gradient(135deg, #d97706, #b45309)",
-  color: "#fff",
-  border: "none",
-  borderRadius: 8,
+  background: "var(--bs-brand)",
+  color: "var(--bs-on-brand)",
+  border: "1px solid var(--bs-brand)",
+  borderRadius: 11,
   padding: "10px 16px",
-  fontWeight: 600,
+  fontWeight: 800,
   cursor: "pointer",
 };
 const btnGhost: React.CSSProperties = {
-  background: "#f3f4f6",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
+  background: "var(--bs-surface)",
+  color: "var(--bs-ink)",
+  border: "1px solid var(--bs-line)",
+  borderRadius: 10,
   padding: "8px 12px",
   cursor: "pointer",
   fontSize: "0.8rem",
 };
-const dica: React.CSSProperties = { fontSize: "0.75rem", color: "#6b7280", marginBottom: 8 };
-const subtitulo: React.CSSProperties = { fontWeight: 700, fontSize: "0.85rem", margin: "14px 0 6px", color: "#374151" };
+const dica: React.CSSProperties = { fontSize: "0.75rem", color: "var(--bs-muted)", marginBottom: 8 };
+const subtitulo: React.CSSProperties = { fontWeight: 800, fontSize: "0.85rem", margin: "18px 0 8px", color: "var(--bs-ink)" };
 
 // ---------------------------------------------------------------------
 // Mensagens de erro em português, com a causa provável
@@ -210,20 +213,25 @@ function Painel() {
 
   if (!authed) {
     return (
-      <div className="saboretal st-body">
-        <div className="app-container" style={{ padding: 24 }}>
-          <h1 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: 12 }}>Área do dono</h1>
-          <form onSubmit={entrar} style={card}>
+      <div className="saboretal st-body admin-page admin-login">
+        <div className="app-container admin-login-container">
+          <div className="admin-login-mark" aria-hidden="true">BS</div>
+          <p className="admin-eyebrow">Bella Salgadinhos</p>
+          <h1 className="admin-login-title">Área do dono</h1>
+          <p className="admin-login-desc">Acesse para gerenciar sua loja e seu cardápio.</p>
+          <form onSubmit={entrar} style={card} className="admin-login-card">
+            <label className="admin-field-label" htmlFor="admin-password">Senha de acesso</label>
             <input
+              id="admin-password"
               type="password"
               style={input}
-              placeholder="Senha de acesso"
+              placeholder="Digite sua senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {erro ? <p style={{ color: "#ef4444", fontSize: "0.85rem" }}>{erro}</p> : null}
-            <button type="submit" style={btn}>
-              Entrar
+            {erro ? <p className="admin-error">{erro}</p> : null}
+            <button type="submit" style={btn} className="admin-login-button">
+              Entrar no painel
             </button>
           </form>
           <a href="/" className="owner-link">
@@ -380,13 +388,15 @@ function PainelConteudo({ password }: { password: string }) {
         coords: end.lat !== null && end.lon !== null ? { lat: end.lat, lon: end.lon } : null,
       });
       const texto = `${end.rua}${numeroLoja ? `, ${numeroLoja}` : ""} - ${end.bairro}, ${end.cidade}/${end.uf}`;
+      // Mantém exatamente a leitura legada de coordenadas; esta etapa é apenas visual.
+      const pontoLegado = coords as unknown as { lat: number | null; lon: number | null } | null;
       setStore((s) =>
         s
           ? {
               ...s,
               address: texto,
-              store_lat: coords?.lat ?? s.store_lat,
-              store_lon: coords?.lon ?? s.store_lon,
+              store_lat: pontoLegado?.lat ?? s.store_lat,
+              store_lon: pontoLegado?.lon ?? s.store_lon,
             }
           : s,
       );
@@ -548,36 +558,26 @@ function PainelConteudo({ password }: { password: string }) {
   const semPonto = store !== null && (store.store_lat === null || store.store_lon === null);
 
   return (
-    <div className="saboretal st-body">
-      <div className="app-container" style={{ padding: 16, paddingBottom: 60 }}>
-        <h1 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: 4 }}>Painel do dono</h1>
-        <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: 16 }}>
-          Ajustes do dia a dia ficam no topo. O resto está nas seções abaixo (toque para abrir).
-        </p>
+    <div className="saboretal st-body admin-page">
+      <div className="app-container admin-container">
+        <header className="admin-header">
+          <p className="admin-eyebrow">Bella Salgadinhos</p>
+          <h1 className="admin-title">Painel do dono</h1>
+          <p className="admin-description">
+            Ajustes do dia a dia ficam no topo. O resto está nas seções abaixo (toque para abrir).
+          </p>
+        </header>
 
         {msg ? (
-          <div
-            style={{
-              background: msg.erro ? "#fef2f2" : "#fffbeb",
-              border: `1px solid ${msg.erro ? "#fecaca" : "#fcd34d"}`,
-              color: msg.erro ? "#991b1b" : "#92400e",
-              borderRadius: 8,
-              padding: 10,
-              fontSize: "0.85rem",
-              marginBottom: 12,
-              position: "sticky",
-              top: 8,
-              zIndex: 5,
-            }}
-          >
+          <div className={`admin-message ${msg.erro ? "is-error" : "is-success"}`} role="status">
             {msg.texto}
           </div>
         ) : null}
 
         {/* ---------- Ajustes rápidos ---------- */}
         {store ? (
-          <div style={card}>
-            <h2 style={{ fontWeight: 700, marginBottom: 10 }}>⚡ Ajustes rápidos</h2>
+          <div style={card} className="admin-quick-card">
+            <h2 className="admin-section-heading">⚡ Ajustes rápidos</h2>
 
             <p style={{ ...subtitulo, marginTop: 0 }}>Loja</p>
             <p style={dica}>
@@ -612,9 +612,9 @@ function PainelConteudo({ password }: { password: string }) {
                 type="checkbox"
                 checked={store.surcharge_active}
                 onChange={(e) => void alternarSobretaxa(e.target.checked)}
-                style={{ width: 22, height: 22, accentColor: "#b45309" }}
+                className="admin-checkbox"
               />
-              <b style={{ color: store.surcharge_active ? "#b45309" : "#374151" }}>
+              <b className={store.surcharge_active ? "admin-accent-text" : ""}>
                 {store.surcharge_active ? "LIGADA — somando na entrega" : "Desligada"}
               </b>
             </label>

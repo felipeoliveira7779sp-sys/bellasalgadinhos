@@ -86,20 +86,6 @@ function getChoiceGroups(p: Product): ChoiceGroup[] {
 
 const fmtKm = (km: number) => String(km).replace(".", ",");
 
-const caixa = (bg: string, borda: string, cor: string): React.CSSProperties => ({
-  background: bg,
-  border: `1px solid ${borda}`,
-  color: cor,
-  borderRadius: 10,
-  padding: 12,
-  marginBottom: 10,
-  fontSize: "0.825rem",
-  fontWeight: 600,
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-});
-
 function Cardapio() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["menu"],
@@ -173,10 +159,11 @@ function Cardapio() {
   }, [data]);
 
   useEffect(() => {
-    if (!grupos.length) return;
-    setCategoriaAtiva((atual) => grupos.some((g) => g.id === atual) ? atual : grupos[0].id);
+    const primeiroGrupo = grupos[0];
+    if (!primeiroGrupo) return;
+    setCategoriaAtiva((atual) => grupos.some((g) => g.id === atual) ? atual : primeiroGrupo.id);
     const atualizar = () => {
-      let atual = grupos[0].id;
+      let atual = primeiroGrupo.id;
       for (const grupo of grupos) {
         const secao = document.getElementById(`sec-${grupo.id}`);
         if (secao && secao.getBoundingClientRect().top <= 190) atual = grupo.id;
@@ -251,7 +238,7 @@ function Cardapio() {
     }).formatToParts(agora);
     const valor = (tipo: string) => localParts.find((p) => p.type === tipo)?.value ?? "";
     const diasPermitidos = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const [ano, mes, dia] = dataPedido.split("-").map(Number);
+    const [ano = 0, mes = 1, dia = 1] = dataPedido.split("-").map(Number);
     const diaEscolhido = new Date(Date.UTC(ano, mes - 1, dia, 12)).toLocaleDateString("en-US", { timeZone: "America/Rio_Branco", weekday: "short" });
     if (!diasPermitidos.includes(diaEscolhido)) return [];
     const minutoAtual = Number(valor("hour")) * 60 + Number(valor("minute"));
@@ -557,7 +544,9 @@ function Cardapio() {
           lista = (dados.features ?? []).flatMap((f, idx) => {
             const p = f.properties ?? {};
             const xy = f.geometry?.coordinates;
-            if (!xy || xy.length < 2) return [];
+            const lat = xy?.[1];
+            const lon = xy?.[0];
+            if (lat === undefined || lon === undefined) return [];
             const nome = p.name ?? "";
             const logradouro = p.street ?? nome;
             const bairroLocal = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
@@ -573,8 +562,8 @@ function Cardapio() {
               cidade: cidadeLocal,
               uf: "AC",
               cep: "",
-              lat: xy[1],
-              lon: xy[0],
+              lat,
+              lon,
             }];
           });
         }
@@ -680,7 +669,7 @@ function Cardapio() {
       return;
     }
     const id = ++calcId.current;
-    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente, coordsOrigem: coordsClienteOrigem ?? undefined }, id);
+    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente, ...(coordsClienteOrigem ? { coordsOrigem: coordsClienteOrigem } : {}) }, id);
   }
 
   async function sendOrder() {
@@ -809,30 +798,33 @@ function Cardapio() {
   const semPonto = !lojaCoords;
 
   return (
-    <div className="saboretal st-body">
+    <div className="saboretal st-body menu-page">
       <div className="app-container">
-        <div
-          className="store-cover"
-          style={store?.cover_url ? { backgroundImage: `url('${store.cover_url}')` } : undefined}
-        >
-          {store?.logo_url ? (
-            <img src={store.logo_url} alt="Logo" className="store-logo-main" />
-          ) : null}
-        </div>
-
-        <div className="store-info-card">
-          <h1 className="store-name">{store?.name ?? "Bella Salgadinhos"}</h1>
-          <p className="store-desc">{store?.description ?? ""}</p>
-          <div className="store-badges">
-            <span className={aberto ? "badge-open" : "badge-closed"}>
-              {aberto ? "Aberto Agora" : "Fechado"}
-            </span>
-            <span className="badge-delivery">{store?.hours_text ?? "Seg-Sáb: 13h-21h"}</span>
+        <header>
+          <div
+            className="store-cover"
+            style={store?.cover_url ? { backgroundImage: `url('${store.cover_url}')` } : undefined}
+          >
+            {store?.logo_url ? (
+              <img src={store.logo_url} alt="Logo da Bella Salgadinhos" className="store-logo-main" />
+            ) : null}
           </div>
-        </div>
 
-        <nav className="sticky-nav">
-          {grupos.map((c, i) => (
+          <div className="store-info-card">
+            <p className="store-eyebrow">Cardápio digital</p>
+            <h1 className="store-name">{store?.name ?? "Bella Salgadinhos"}</h1>
+            <p className="store-desc">{store?.description ?? ""}</p>
+            <div className="store-badges">
+              <span className={aberto ? "badge-open" : "badge-closed"}>
+                {aberto ? "Aberto Agora" : "Fechado"}
+              </span>
+              <span className="badge-delivery">{store?.hours_text ?? "Seg-Sáb: 13h-21h"}</span>
+            </div>
+          </div>
+        </header>
+
+        <nav className="sticky-nav" aria-label="Categorias do cardápio">
+          {grupos.map((c) => (
             <button
               key={c.id}
               className={`nav-item ${c.id === categoriaAtiva ? "active" : ""}`}
@@ -845,12 +837,12 @@ function Cardapio() {
           ))}
         </nav>
 
-        <div>
+        <main>
           {isLoading ? (
-            <p style={{ padding: 20, color: "#6b7280" }}>Carregando cardápio...</p>
+            <p className="menu-feedback">Carregando cardápio...</p>
           ) : null}
           {isError ? (
-            <p style={{ padding: 20, color: "#6b7280" }}>
+            <p className="menu-feedback">
               Não foi possível carregar o cardápio agora. Tente novamente em instantes.
             </p>
           ) : null}
@@ -860,34 +852,14 @@ function Cardapio() {
               <h2 className="section-title">{c.title}</h2>
               {c.items.map((p) => (
                 <button
-                  className="product-card"
+                  className={`product-card ${!p.active ? "is-disabled" : ""}`}
                   key={p.id}
                   onClick={() => openProduct(p)}
                   disabled={!p.active}
-                  style={
-                    !p.active
-                      ? { opacity: 0.55, filter: "grayscale(0.8)", cursor: "not-allowed" }
-                      : undefined
-                  }
                 >
                   <div className="product-info">
                     {!p.active && (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          backgroundColor: "#ef4444",
-                          color: "#ffffff",
-                          fontSize: "0.72rem",
-                          fontWeight: 700,
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          marginBottom: "6px",
-                          textTransform: "uppercase",
-                          width: "fit-content",
-                        }}
-                      >
-                        Indisponível no momento
-                      </span>
+                      <span className="product-unavailable">Indisponível no momento</span>
                     )}
                     <h3 className="product-title">{p.name}</h3>
                     <p className="product-desc">{p.description}</p>
@@ -896,14 +868,17 @@ function Cardapio() {
                       {money(basePrice(p))}
                     </span>
                   </div>
-                  {p.image_url ? (
-                    <img src={p.image_url} className="product-img" alt={p.name} />
-                  ) : null}
+                  <span className="product-side">
+                    {p.image_url ? (
+                      <img src={p.image_url} className="product-img" alt={p.name} />
+                    ) : null}
+                    <span className="product-add" aria-hidden="true">+</span>
+                  </span>
                 </button>
               ))}
             </section>
           ))}
-        </div>
+        </main>
 
         <a href="/painel" className="owner-link">
           Área do dono da loja
@@ -928,31 +903,14 @@ function Cardapio() {
       />
 
       {/* Modal do Produto */}
-      <div className={`bottom-sheet ${open ? "active" : ""}`}>
+      <div className={`bottom-sheet product-sheet ${open ? "active" : ""}`}>
         {open ? (
           <>
             <div className="modal-img-wrapper">
               {open.image_url ? (
                 <img src={open.image_url} className="modal-main-img" alt={open.name} />
               ) : null}
-              <button
-                className="btn-close"
-                onClick={() => setOpen(null)}
-                style={{
-                  width: 40,
-                  height: 40,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.3rem",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  backgroundColor: "rgba(0, 0, 0, 0.55)",
-                  border: "2px solid #ffffff",
-                  borderRadius: "50%",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
-                }}
-              >
+              <button className="btn-close" onClick={() => setOpen(null)} aria-label="Fechar produto">
                 ✕
               </button>
             </div>
@@ -1000,23 +958,19 @@ function Cardapio() {
 
               {isRefri ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
-                  <b style={{ fontSize: "0.9rem" }}>Escolha a quantidade de cada um</b>
-                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                  <b>Escolha a quantidade de cada um</b>
+                  <div className="option-list">
                     {open.flavors.map((f) => (
-                      <div
-                        key={f}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-                      >
-                        <span style={{ fontSize: "0.9rem" }}>
+                      <div key={f} className="option-row">
+                        <span>
                           {f}
-                          <span style={{ display: "block", fontSize: "0.75rem", color: "#6b7280" }}>
-                            {money(refriPrecos[f] ?? 0)}
-                          </span>
+                          <span className="option-price">{money(refriPrecos[f] ?? 0)}</span>
                         </span>
                         <div className="qty-controls">
                           <button
                             className="qty-btn"
                             onClick={() => setRefriQtys((c) => ({ ...c, [f]: Math.max(0, (c[f] ?? 0) - 1) }))}
+                            aria-label={`Diminuir ${f}`}
                           >
                             -
                           </button>
@@ -1024,6 +978,7 @@ function Cardapio() {
                           <button
                             className="qty-btn"
                             onClick={() => setRefriQtys((c) => ({ ...c, [f]: (c[f] ?? 0) + 1 }))}
+                            aria-label={`Aumentar ${f}`}
                           >
                             +
                           </button>
@@ -1036,18 +991,15 @@ function Cardapio() {
 
               {open.flavors.length > 0 && !sortido && !isRefri ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
-                  <b style={{ fontSize: "0.9rem" }}>Sabores (escolha até {maxSabores})</b>
-                  <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                  <b>Sabores (escolha até {maxSabores})</b>
+                  <div className="option-list">
                     {open.flavors.map((f) => (
-                      <label
-                        key={f}
-                        style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85rem", cursor: "pointer" }}
-                      >
+                      <label key={f} className="option-row">
                         <input
+                          className="choice-input"
                           type="checkbox"
                           checked={flavors.includes(f)}
                           onChange={() => toggleFlavor(f)}
-                          style={{ width: 18, height: 18, accentColor: "#b45309" }}
                         />
                         {f}
                       </label>
@@ -1058,19 +1010,16 @@ function Cardapio() {
 
               {open.single_flavors.length > 0 ? (
                 <div className="obs-box" style={{ marginBottom: 12 }}>
-                  <b style={{ fontSize: "0.9rem" }}>Escolha o sabor</b>
-                  <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                  <b>Escolha o sabor</b>
+                  <div className="option-list">
                     {open.single_flavors.map((f) => (
-                      <label
-                        key={f}
-                        style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.9rem", cursor: "pointer" }}
-                      >
+                      <label key={f} className="option-row">
                         <input
+                          className="choice-input"
                           type="radio"
                           name="single"
                           checked={single === f}
                           onChange={() => setSingle(f)}
-                          style={{ width: 18, height: 18, accentColor: "#b45309" }}
                         />
                         {f}
                       </label>
@@ -1081,21 +1030,18 @@ function Cardapio() {
 
               {effectiveChoiceGroups.map((g) => (
                 <div className="obs-box" style={{ marginBottom: 12 }} key={g.title}>
-                  <b style={{ fontSize: "0.9rem", color: "#9a3412" }}>
-                    {g.title} <span style={{ color: "#ef4444" }}>*</span>
+                  <b>
+                    {g.title} <span className="required-mark">*</span>
                   </b>
-                  <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                  <div className="option-list">
                     {g.options.map((o) => (
-                      <label
-                        key={o}
-                        style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.9rem", cursor: "pointer" }}
-                      >
+                      <label key={o} className="option-row">
                         <input
+                          className="choice-input"
                           type="radio"
                           name={`choice-${g.title}`}
                           checked={choices[g.title] === o}
                           onChange={() => setChoices((c) => ({ ...c, [g.title]: o }))}
-                          style={{ width: 18, height: 18, accentColor: "#b45309" }}
                         />
                         {o}
                       </label>
@@ -1136,11 +1082,11 @@ function Cardapio() {
       </div>
 
       {/* Resumo do Carrinho */}
-      <div className={`bottom-sheet ${cartOpen ? "active" : ""}`}>
+      <div className={`bottom-sheet cart-sheet ${cartOpen ? "active" : ""}`}>
         <div className="sheet-handle" />
         <div className="cart-header">
           <span className="cart-title">Resumo do Pedido</span>
-          <button className="btn-close" style={{ position: "static" }} onClick={() => setCartOpen(false)}>
+          <button className="btn-close" onClick={() => setCartOpen(false)} aria-label="Fechar carrinho">
             ✕
           </button>
         </div>
@@ -1153,27 +1099,26 @@ function Cardapio() {
                 </b>
                 {i.sizeLabel ? <span className="cart-item-add-text">{i.sizeLabel}</span> : null}
                 {i.flavors.length > 0 ? (
-                  <span className="cart-item-add-text" style={{ color: "#b45309" }}>
+                  <span className="cart-item-add-text cart-item-choice">
                     Sabores: {i.flavors.join(", ")}
                   </span>
                 ) : null}
                 {Object.keys(i.choices).length > 0 ? (
-                  <span className="cart-item-add-text" style={{ color: "#b45309" }}>
+                  <span className="cart-item-add-text cart-item-choice">
                     Escolhas: {Object.entries(i.choices).map(([k, v]) => `${k}: ${v}`).join(" | ")}
                   </span>
                 ) : null}
                 {i.singleFlavor ? (
-                  <span className="cart-item-add-text" style={{ color: "#b45309" }}>
+                  <span className="cart-item-add-text cart-item-choice">
                     Sabor: {i.singleFlavor}
                   </span>
                 ) : null}
                 {i.obs ? <span className="cart-item-add-text">Obs: {i.obs}</span> : null}
-                <br />
-                <span style={{ color: "#15803d", fontWeight: 600 }}>{money(precoUnitarioNoPagamento(i) * i.qty)}</span>
+                <span className="cart-item-price">{money(precoUnitarioNoPagamento(i) * i.qty)}</span>
               </div>
               <button
+                className="cart-remove"
                 onClick={() => setCart((c) => c.filter((_, n) => n !== idx))}
-                style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
               >
                 Remover
               </button>
@@ -1204,7 +1149,7 @@ function Cardapio() {
               <button type="button" className={`delivery-option ${modoPedido === "agora" ? "selected" : ""}`} onClick={() => { setModoPedido("agora"); setDataPedido(dataLocalRioBranco()); setHorario(""); }}>Pedir agora</button>
               <button type="button" className={`delivery-option ${modoPedido === "agendado" ? "selected" : ""}`} onClick={() => setModoPedido("agendado")}>Agendar pedido</button>
             </div>
-            {modoPedido === "agora" ? <div style={caixa("#eff6ff", "#bfdbfe", "#1e40af")}>⏱️ Prazo estimado de preparo: <b>40 a 70 minutos</b>.</div> : (
+            {modoPedido === "agora" ? <div className="notice notice-info">⏱️ Prazo estimado de preparo: <b>40 a 70 minutos</b>.</div> : (
               <div className="datetime-section">
                 <div className="input-group"><input type="date" min={dataLocalRioBranco()} className="input-control" value={dataPedido} onChange={(e) => { setDataPedido(e.target.value); setHorario(""); }} /></div>
                 <div className="input-group"><select className="input-control" value={horario} onChange={(e) => setHorario(e.target.value)}><option value="">Selecione o horário...</option>{horarios.map((h) => <option key={h} value={h}>{h}</option>)}</select>{horarios.length === 0 ? <small>Não há horários disponíveis para esta data. Escolha outra data.</small> : null}</div>
@@ -1233,7 +1178,7 @@ function Cardapio() {
                 value={tel}
                 onChange={(e) => setTel(formatarTelefone(e.target.value))}
               />
-              <small style={{ color: "#666" }}>Digite DDD + número. Ex.: (68) 99999-9999</small>
+              <small className="field-help">Digite DDD + número. Ex.: (68) 99999-9999</small>
             </div>
           </div>
 
@@ -1242,12 +1187,12 @@ function Cardapio() {
               <h3>🏠 Endereço de entrega</h3>
 
               {store?.surcharge_active && sobretaxa > 0 ? (
-                <div style={caixa("#fffbeb", "#fcd34d", "#92400e")}>
+                <div className="notice notice-warning">
                   ⚠️ {store.surcharge_label}: adicional de {money(sobretaxa)} na entrega.
                 </div>
               ) : null}
 
-              <button type="button" onClick={() => void usarLocalizacaoAtual()} disabled={localizandoGps || calc.status === "loading"} style={{ width: "100%", padding: 12, marginBottom: 10, border: 0, borderRadius: 10, background: "#0f766e", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: localizandoGps ? 0.7 : 1 }}>
+              <button type="button" className="btn-location" onClick={() => void usarLocalizacaoAtual()} disabled={localizandoGps || calc.status === "loading"}>
                 {localizandoGps ? "Obtendo localização..." : "📍 Usar minha localização atual"}
               </button>
               <div className="input-group">
@@ -1268,12 +1213,12 @@ function Cardapio() {
                   onChange={(e) => aoDigitarRua(e.target.value)}
                 />
               </div>
-              {buscandoLocal ? <p style={{ fontSize: 12, color: "#666", margin: "0 0 8px" }}>Buscando ruas e CEPs...</p> : null}
-              {erroBuscaLocal ? <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 8px" }}>{erroBuscaLocal}</p> : null}
+              {buscandoLocal ? <p className="field-help">Buscando ruas e CEPs...</p> : null}
+              {erroBuscaLocal ? <p className="field-help">{erroBuscaLocal}</p> : null}
               {sugestoesRua.length > 0 ? (
-                <div style={{ border: "1px solid #d1d5db", borderRadius: 8, marginTop: -6, marginBottom: 10, overflow: "hidden", background: "#fff" }}>
-                  {sugestoesRua.map((s) => <button key={s.id} type="button" onClick={() => selecionarSugestaoRua(s)} style={{ display: "block", width: "100%", padding: 10, textAlign: "left", background: "#fff", border: 0, borderBottom: "1px solid #eee", cursor: "pointer" }}>{s.label}</button>)}
-                  <div style={{ padding: "6px 10px", textAlign: "right", fontSize: 11, color: "#777" }}>Busca de CEPs via ViaCEP; mapa (Photon) como alternativa</div>
+                <div className="address-suggestions">
+                  {sugestoesRua.map((s) => <button key={s.id} type="button" className="address-suggestion" onClick={() => selecionarSugestaoRua(s)}>{s.label}</button>)}
+                  <div className="address-source">Busca de CEPs via ViaCEP; mapa (Photon) como alternativa</div>
                 </div>
               ) : null}
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
@@ -1294,13 +1239,12 @@ function Cardapio() {
               </div>
               <div className="input-group">
                 <input
-                  className="input-control"
+                  className={`input-control ${bairroBloqueado ? "is-readonly" : ""}`}
                   placeholder="Bairro"
                   value={bairro}
                   readOnly={bairroBloqueado}
                   onChange={(e) => { if (!bairroBloqueado) editarEndereco(setBairro, e.target.value); }}
                   title={bairroBloqueado ? "Bairro preenchido pela busca do endereço e bloqueado para evitar alterações." : "O bairro será preenchido ao selecionar uma rua ou CEP."}
-                  style={bairroBloqueado ? { background: "#f3f4f6", color: "#555", cursor: "not-allowed" } : undefined}
                 />
               </div>
               <div className="input-group" style={{ display: "flex", gap: 8 }}>
@@ -1323,41 +1267,29 @@ function Cardapio() {
 
               <button
                 type="button"
+                className="btn-calculate"
                 onClick={calcularPeloBotao}
                 disabled={calc.status === "loading"}
-                style={{
-                  width: "100%",
-                  padding: "11px 12px",
-                  background: "#2563eb",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  marginBottom: 10,
-                  opacity: calc.status === "loading" ? 0.7 : 1,
-                }}
               >
                 {calc.status === "loading" ? "Calculando..." : "Calcular taxa de entrega"}
               </button>
 
               {calc.status === "loading" ? (
-                <div style={caixa("#eff6ff", "#bfdbfe", "#1e40af")}>⏳ {calc.mensagem}</div>
+                <div className="notice notice-info">⏳ {calc.mensagem}</div>
               ) : null}
 
               {kmAtual !== null ? (
-                <div style={caixa("#eff6ff", "#bfdbfe", "#1e40af")}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+                <div className="notice notice-info">
+                  <div className="notice-distance">
                     <span>
                       📍{" "}
                       { `Distância: ~${fmtKm(kmAtual)} km${calc.estimada ? " (estimada)" : ""}` }
                     </span>
-                    <span style={{ color: "#15803d", fontWeight: 800 }}>
+                    <span className="notice-freight">
                       {frete ? money(frete.taxa) : "—"}
                     </span>
                   </div>
-                  <span style={{ fontSize: "0.75rem" }}>
+                  <span>
                     {!pagamento
                       ? "A taxa pode mudar conforme a forma de pagamento."
                       : frete?.cobraRetorno
@@ -1368,7 +1300,7 @@ function Cardapio() {
               ) : null}
 
               {calc.status === "fora" ? (
-                <div style={caixa("#fef2f2", "#fecaca", "#991b1b")}>
+                <div className="notice notice-error">
                   <span>
                     Esse endereço fica a ~{calc.km !== null ? fmtKm(calc.km) : "?"} km, fora da nossa
                     área de entrega (até {LIMITE_KM} km). Escolha retirada
@@ -1379,7 +1311,6 @@ function Cardapio() {
                       href={`https://api.whatsapp.com/send?phone=${whatsLoja}`}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ color: "#991b1b", textDecoration: "underline" }}
                     >
                       Falar com a loja no WhatsApp
                     </a>
@@ -1388,7 +1319,7 @@ function Cardapio() {
               ) : null}
 
               {calc.status === "erro" && calc.mensagem ? (
-                <div style={caixa("#fffbeb", "#fcd34d", "#92400e")}>{calc.mensagem}</div>
+                <div className="notice notice-warning">{calc.mensagem}</div>
               ) : null}
 
             </div>

@@ -5,7 +5,7 @@ import type { Product } from "@/lib/menu-data";
 const p = (id: string, cat: string, name: string, price: number): Product =>
   ({ id, category_id: cat, name, description: "", price, image_url: null, sizes: [], flavors: [],
     single_flavors: [], units_base: null, units_per_flavor: 25, allow_assorted: true,
-    choice_groups: [], active: true, position: 0 }) as Product;
+    choice_groups: [], active: true, is_promotion: false, position: 0 }) as Product;
 
 const cats = [
   { id: "c", title: "Salgadinhos (cento)", position: 0 },

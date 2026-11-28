@@ -301,9 +301,9 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           const bairroConfere = !!bairroMapa &&
             (bairroMapa === bairroAlvo || bairroMapa.includes(bairroAlvo) || bairroAlvo.includes(bairroMapa));
           const numeroConfere = !!numeroMapa && numeroMapa === numero;
-          const coords = xy && xy.length >= 2
-            ? { lat: numeroValido(xy[1]), lon: numeroValido(xy[0]) }
-            : null;
+          const lat = xy && xy.length >= 2 ? numeroValido(xy[1]) : null;
+          const lon = xy && xy.length >= 2 ? numeroValido(xy[0]) : null;
+          const coords = lat !== null && lon !== null ? { lat, lon } : null;
           return { ruaConfere, bairroConfere, numeroConfere, coords };
         }).filter((item) =>
           item.ruaConfere &&
