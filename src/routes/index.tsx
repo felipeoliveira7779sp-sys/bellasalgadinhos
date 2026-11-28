@@ -154,6 +154,16 @@ function Cardapio() {
   const [categoriaAtiva, setCategoriaAtiva] = useState("");
 
   const store = data?.store ?? null;
+
+  // Baixa a logo assim que os dados da loja chegam, antes de ela ser exibida na abertura.
+  useEffect(() => {
+    if (!store?.logo_url) return;
+    const logoPreload = new Image();
+    logoPreload.fetchPriority = "high";
+    logoPreload.decoding = "async";
+    logoPreload.src = store.logo_url;
+  }, [store?.logo_url]);
+
   const effectiveChoiceGroups = open ? getChoiceGroups(open) : [];
   const whatsLoja = "556892505137"; // WhatsApp da loja informado pelo proprietário
   // Prioriza as coordenadas salvas no painel; mantém o ponto confirmado como reserva.
@@ -903,7 +913,14 @@ function Cardapio() {
           <div className="bella-welcome-glow" aria-hidden="true" />
           <div className="bella-welcome-content">
             {store?.logo_url ? (
-              <img className="bella-welcome-logo" src={store.logo_url} alt="Logo da Bella Salgadinhos" />
+              <img
+                className="bella-welcome-logo"
+                src={store.logo_url}
+                alt="Logo da Bella Salgadinhos"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
             ) : (
               <div className="bella-welcome-mark" aria-hidden="true">B<span>♥</span></div>
             )}
