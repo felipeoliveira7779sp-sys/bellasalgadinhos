@@ -312,7 +312,7 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           item.coords?.lat !== undefined &&
           item.coords?.lon !== null &&
           item.coords?.lon !== undefined
-        );
+        ).sort((a, b) => Number(b.bairroConfere) - Number(a.bairroConfere));
         const melhor = candidatos[0];
         if (melhor?.coords?.lat != null && melhor.coords.lon != null) {
           return { coords: melhor.coords, estimada: !melhor.numeroConfere };
