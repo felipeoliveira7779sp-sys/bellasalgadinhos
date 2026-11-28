@@ -154,6 +154,8 @@ function Cardapio() {
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [coordsCliente, setCoordsCliente] = useState<CoordenadaGeo | null>(null);
+  const [coordsClienteOrigem, setCoordsClienteOrigem] = useState<"gps" | "cep" | null>(null);
+  const [localizandoGps, setLocalizandoGps] = useState(false);
   const [calc, setCalc] = useState<CalcFrete>(CALC_VAZIO);
   const calcId = useRef(0);
   const [categoriaAtiva, setCategoriaAtiva] = useState("");
@@ -375,6 +377,7 @@ function Cardapio() {
     calcId.current++;
     setCalc(CALC_VAZIO);
     setCoordsCliente(null);
+    setCoordsClienteOrigem(null);
   }
 
   async function calcular(dados: DadosEndereco, id: number) {
@@ -427,6 +430,7 @@ function Cardapio() {
         ? { lat: end.lat, lon: end.lon }
         : null;
       setCoordsCliente(coords);
+      setCoordsClienteOrigem(coords ? "cep" : null);
       if (!end.rua) {
         setCalc({
           status: "erro",
@@ -463,6 +467,7 @@ function Cardapio() {
     setSugestoesRua([]);
     setErroBuscaLocal("");
     setCoordsCliente(null);
+    setCoordsClienteOrigem(null);
     limparCalculo();
 
     const buscaId = ++buscaRuaId.current;
@@ -604,6 +609,7 @@ function Cardapio() {
     // Não usa coordenada aproximada da rua como endereço exato da residência.
     // O cálculo continuará geocodificando rua + número + bairro confirmados.
     setCoordsCliente(null);
+    setCoordsClienteOrigem(null);
     calcId.current++;
     setCalc(CALC_VAZIO);
   }
@@ -621,7 +627,51 @@ function Cardapio() {
     setter(valor);
     // Qualquer ajuste manual invalida coordenadas antigas para evitar frete em outro bairro.
     setCoordsCliente(null);
+    setCoordsClienteOrigem(null);
     limparCalculo();
+  }
+
+  async function usarLocalizacaoAtual() {
+    if (!navigator.geolocation) {
+      setCalc({ status: "erro", km: null, estimada: false, mensagem: "Seu navegador não oferece localização. Digite o endereço manualmente." });
+      return;
+    }
+    setLocalizandoGps(true);
+    setErroBuscaLocal("");
+    const id = ++calcId.current;
+    setCalc({ status: "loading", km: null, estimada: false, mensagem: "Obtendo sua localização..." });
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      if (id !== calcId.current) return;
+      const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
+      try {
+        const qs = new URLSearchParams({ format: "jsonv2", lat: String(coords.lat), lon: String(coords.lon), addressdetails: "1", "accept-language": "pt-BR" });
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${qs.toString()}`);
+        if (!response.ok) throw new Error("Não foi possível identificar o endereço pelo GPS. Digite-o manualmente.");
+        const resultado = await response.json() as { address?: { road?: string; pedestrian?: string; footway?: string; house_number?: string; suburb?: string; neighbourhood?: string; quarter?: string; postcode?: string } };
+        if (id !== calcId.current) return;
+        const a = resultado.address ?? {};
+        const ruaGps = a.road ?? a.pedestrian ?? a.footway ?? "";
+        if (!ruaGps) throw new Error("O GPS encontrou sua posição, mas o mapa não identificou a rua. Digite o endereço manualmente.");
+        const bairroGps = a.suburb ?? a.neighbourhood ?? a.quarter ?? "";
+        const numeroGps = a.house_number ?? "";
+        setRua(ruaGps); setNumero(numeroGps); setBairro(bairroGps);
+        setBairroBloqueado(Boolean(bairroGps)); setCidade("Rio Branco"); setUf("AC");
+        setCep(a.postcode ? formatarCep(a.postcode) : "");
+        setCoordsCliente(coords); setCoordsClienteOrigem("gps");
+        setSugestoesRua([]); setErroBuscaLocal("");
+        void calcular({ rua: ruaGps, numero: numeroGps, bairro: bairroGps, cidade: "Rio Branco", uf: "AC", coords, coordsOrigem: "gps" }, id);
+      } catch (error) {
+        if (id === calcId.current) setCalc({ status: "erro", km: null, estimada: false, mensagem: error instanceof Error ? error.message : "Não foi possível usar sua localização." });
+      } finally { setLocalizandoGps(false); }
+    }, (error) => {
+      if (id !== calcId.current) return;
+      const mensagem = error.code === error.PERMISSION_DENIED
+        ? "Permissão de localização negada. Permita o acesso no navegador ou digite o endereço manualmente."
+        : error.code === error.POSITION_UNAVAILABLE
+          ? "Não foi possível obter sua posição. Confira o GPS ou digite o endereço manualmente."
+          : "A localização demorou demais. Tente novamente ou digite o endereço manualmente.";
+      setCalc({ status: "erro", km: null, estimada: false, mensagem }); setLocalizandoGps(false);
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
 
   function calcularPeloBotao() {
@@ -630,7 +680,7 @@ function Cardapio() {
       return;
     }
     const id = ++calcId.current;
-    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente }, id);
+    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente, coordsOrigem: coordsClienteOrigem ?? undefined }, id);
   }
 
   async function sendOrder() {
@@ -1197,6 +1247,9 @@ function Cardapio() {
                 </div>
               ) : null}
 
+              <button type="button" onClick={() => void usarLocalizacaoAtual()} disabled={localizandoGps || calc.status === "loading"} style={{ width: "100%", padding: 12, marginBottom: 10, border: 0, borderRadius: 10, background: "#0f766e", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: localizandoGps ? 0.7 : 1 }}>
+                {localizandoGps ? "Obtendo localização..." : "📍 Usar minha localização atual"}
+              </button>
               <div className="input-group">
                 <input
                   className="input-control"
