@@ -2100,3 +2100,147 @@
   background:#fbe0cc!important;
   border-color:#d98545!important;
 }
+
+
+/* Redesign visível do topo: imagem nítida + painel de chamada em destaque */
+.bella.st-body.menu-page header .store-cover.ember-hero{
+  min-height:520px!important;
+  border:3px solid #d97835!important;
+  border-radius:30px!important;
+  background-color:#f1d2b8!important;
+  background-position:center 42%!important;
+  box-shadow:0 24px 60px #a84f2438,0 0 0 6px #e58b492b!important;
+  overflow:hidden!important;
+}
+.bella.st-body.menu-page header .store-cover.ember-hero:after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  background:
+    linear-gradient(90deg,rgba(255,248,239,.42) 0%,rgba(255,248,239,.24) 48%,rgba(255,248,239,.04) 100%),
+    linear-gradient(0deg,rgba(201,91,37,.20),transparent 48%)!important;
+  pointer-events:none!important;
+}
+.bella.st-body.menu-page header .store-cover.ember-hero:before{
+  content:""!important;
+  position:absolute!important;
+  z-index:1!important;
+  inset:0 auto 0 0!important;
+  width:9px!important;
+  background:linear-gradient(180deg,#ffc28f,#d97835,#a94f20)!important;
+  display:block!important;
+}
+.bella.st-body.menu-page header .ember-hero-shade{
+  z-index:1!important;
+  background:radial-gradient(ellipse at 78% 42%,#f28b4b45,transparent 48%)!important;
+}
+.bella.st-body.menu-page header .ember-hero-copy{
+  z-index:2!important;
+  width:min(570px,76%)!important;
+  margin:28px!important;
+  padding:clamp(24px,4vw,42px)!important;
+  border:1px solid #fff!important;
+  border-left:6px solid #d97835!important;
+  border-radius:22px!important;
+  background:rgba(255,252,247,.91)!important;
+  box-shadow:0 16px 42px #60351d30!important;
+  backdrop-filter:blur(10px)!important;
+}
+.bella.st-body.menu-page header .ember-script{
+  color:#a94f20!important;
+  font-size:clamp(.72rem,1.5vw,.9rem)!important;
+  letter-spacing:.13em!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+}
+.bella.st-body.menu-page header .ember-display{
+  color:#24251f!important;
+  font-size:clamp(3rem,7vw,5.8rem)!important;
+  line-height:.94!important;
+  text-shadow:none!important;
+}
+.bella.st-body.menu-page header .ember-hero-description{
+  color:#514b44!important;
+  font-weight:650!important;
+  text-shadow:none!important;
+}
+.bella.st-body.menu-page header .ember-primary-action{
+  min-height:58px!important;
+  padding-inline:28px!important;
+  border:2px solid #fff!important;
+  border-radius:14px!important;
+  background:linear-gradient(135deg,#f49a50,#d66b2c)!important;
+  color:#fff!important;
+  font-size:.88rem!important;
+  box-shadow:0 10px 26px #b9572c55,0 0 0 4px #e88a4826!important;
+}
+.bella.st-body.menu-page header .ember-open-state{
+  font-weight:900!important;
+  color:#514b44!important;
+}
+.bella.st-body.menu-page header .store-logo-main{
+  z-index:3!important;
+  border:4px solid #fff!important;
+  box-shadow:0 10px 30px #60351d45,0 0 0 4px #d97835!important;
+}
+.bella.st-body.menu-page header .ember-hero-stamp{
+  z-index:3!important;
+  border:2px solid #d97835!important;
+  background:#fffaf2ed!important;
+  color:#a94f20!important;
+  box-shadow:0 12px 30px #60351d35!important;
+}
+.bella.st-body.menu-page header + .store-info-card{
+  border:2px solid #e69a63!important;
+  border-top:0!important;
+  box-shadow:0 16px 38px #b85f2c24!important;
+}
+@media(max-width:640px){
+  .bella.st-body.menu-page header .store-cover.ember-hero{
+    min-height:590px!important;
+    height:auto!important;
+    align-items:flex-start!important;
+    background-position:58% center!important;
+    border-radius:24px!important;
+    box-shadow:0 18px 42px #a84f2438,0 0 0 4px #e58b492b!important;
+  }
+  .bella.st-body.menu-page header .store-cover.ember-hero:after{
+    background:
+      linear-gradient(180deg,rgba(255,248,239,.12) 0%,rgba(255,248,239,.04) 45%,rgba(255,248,239,.30) 100%),
+      linear-gradient(90deg,rgba(255,248,239,.22),transparent 90%)!important;
+  }
+  .bella.st-body.menu-page header .ember-hero-copy{
+    width:calc(100% - 34px)!important;
+    margin:22px 17px!important;
+    padding:22px 19px!important;
+    border-left-width:5px!important;
+    border-radius:18px!important;
+  }
+  .bella.st-body.menu-page header .ember-display{
+    font-size:clamp(2.8rem,13vw,4.4rem)!important;
+  }
+  .bella.st-body.menu-page header .ember-hero-description{
+    margin-top:13px!important;
+    font-size:.96rem!important;
+    line-height:1.5!important;
+  }
+  .bella.st-body.menu-page header .ember-hero-actions{
+    gap:12px!important;
+    margin-top:18px!important;
+  }
+  .bella.st-body.menu-page header .ember-primary-action{
+    min-height:54px!important;
+    padding-inline:20px!important;
+  }
+  .bella.st-body.menu-page header .store-logo-main{
+    width:78px!important;
+    height:78px!important;
+    right:16px!important;
+    bottom:18px!important;
+  }
+  .bella.st-body.menu-page header .ember-hero-stamp{
+    right:108px!important;
+    bottom:18px!important;
+  }
+}
