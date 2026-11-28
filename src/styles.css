@@ -2560,9 +2560,9 @@
 
 
 /* Abertura automática e breve */
-.bella.st-body.menu-page .bella-welcome{animation:bella-welcome-fade .25s ease both,bella-welcome-exit .42s ease-in 1.12s forwards!important}
+.bella.st-body.menu-page .bella-welcome{animation:bella-welcome-fade .35s ease both,bella-welcome-exit .5s ease-in 2.35s forwards!important}
 .bella.st-body.menu-page .bella-welcome-content{animation:bella-welcome-card .55s cubic-bezier(.2,.8,.2,1) both!important}
 .bella.st-body.menu-page .bella-welcome-glow{animation:bella-welcome-glow .9s ease-in-out infinite alternate!important}
 .bella.st-body.menu-page .bella-welcome-signoff{margin-bottom:0!important;font-weight:700}
 @keyframes bella-welcome-exit{to{opacity:0;visibility:hidden;transform:scale(1.025);pointer-events:none}}
-@media(prefers-reduced-motion:reduce){.bella.st-body.menu-page .bella-welcome{animation:bella-welcome-exit .01s 1.5s forwards!important}}
+@media(prefers-reduced-motion:reduce){.bella.st-body.menu-page .bella-welcome{animation:bella-welcome-fade .01s linear both,bella-welcome-exit .35s ease-in 2.35s forwards!important}}
