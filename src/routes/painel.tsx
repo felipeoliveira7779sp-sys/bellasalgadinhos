@@ -90,8 +90,11 @@ const dica: React.CSSProperties = { fontSize: "0.75rem", color: "var(--bs-muted)
 const subtitulo: React.CSSProperties = { fontWeight: 800, fontSize: "0.85rem", margin: "18px 0 8px", color: "var(--bs-ink)" };
 
 function hojeISO() {
-  const agora = new Date();
-  return `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-${String(agora.getDate()).padStart(2,"0")}`;
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Rio_Branco", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const valor = (tipo: string) => partes.find((parte) => parte.type === tipo)?.value ?? "";
+  return `${valor("year")}-${valor("month")}-${valor("day")}`;
 }
 function deslocarDiaISO(base: string, dias: number) {
   const [ano, mes, dia] = base.split("-").map(Number);
@@ -340,7 +343,7 @@ function PainelConteudo({ password }: { password: string }) {
   function exportarRelatorioCSV() {
     const cabecalho = ["ID","Data/hora do registro","Cliente","Telefone","Tipo","Agendamento","Pagamento","Itens","Subtotal","Frete","Taxa adicional","Total","Status"];
     const linhas = pedidosRelatorio.map((p: any) => [
-      p.id, new Date(p.created_at).toLocaleString("pt-BR"), p.customer_name, p.customer_phone,
+      p.id, new Date(p.created_at).toLocaleString("pt-BR", { timeZone: "America/Rio_Branco" }), p.customer_name, p.customer_phone,
       p.order_type, p.order_mode === "agendado" ? `${p.scheduled_date} ${p.scheduled_time}` : "Assim que possível",
       textoPagamento(p.payment_method), resumoItensPedido(p.items), p.subtotal, p.delivery_fee, p.surcharge, p.total, p.status,
     ]);
@@ -805,7 +808,7 @@ function PainelConteudo({ password }: { password: string }) {
                   <tbody>
                     {pedidosRelatorio.map((p: any) => (
                       <tr key={p.id}>
-                        <td>{new Date(p.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                        <td>{new Date(p.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Rio_Branco" })}</td>
                         <td><b>{p.customer_name}</b><small>{p.customer_phone}</small></td>
                         <td>{resumoItensPedido(p.items)}</td>
                         <td>{textoPagamento(p.payment_method)}</td>
