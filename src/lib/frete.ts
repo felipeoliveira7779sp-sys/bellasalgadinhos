@@ -165,6 +165,7 @@ export type DadosEndereco = {
   uf: string;
   coords: CoordenadaGeo | null; // coordenadas já conhecidas
   coordsOrigem?: "gps" | "cep";
+  cep?: string; // CEP digitado, usado como critério auxiliar para ruas homônimas
 };
 
 type PhotonFeature = {
@@ -195,6 +196,7 @@ type NominatimItem = {
     suburb?: string;
     neighbourhood?: string;
     quarter?: string;
+    postcode?: string;
     city?: string;
     town?: string;
     municipality?: string;
@@ -304,7 +306,10 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           const lat = xy && xy.length >= 2 ? numeroValido(xy[1]) : null;
           const lon = xy && xy.length >= 2 ? numeroValido(xy[0]) : null;
           const coords = lat !== null && lon !== null ? { lat, lon } : null;
-          return { ruaConfere, bairroConfere, numeroConfere, coords };
+          const distanciaCep = p.coordsOrigem === "cep" && p.coords && coords
+            ? distanciaLinhaReta(p.coords, coords)
+            : null;
+          return { ruaConfere, bairroConfere, numeroConfere, coords, distanciaCep };
         }).filter((item) =>
           item.ruaConfere &&
           (/(?:br|ac)[\s-]*\d{1,3}/i.test(rua) ? item.bairroConfere : true) &&
@@ -361,6 +366,8 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             const numeroEncontrado = String(endereco.house_number ?? "").trim();
             const bairrosEncontrados = [endereco.suburb, endereco.neighbourhood, endereco.quarter]
               .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
+            const cepMapa = limparCep(endereco.postcode ?? "");
+            const cepConfere = !!p.cep && !!cepMapa && cepMapa.slice(0, 5) === limparCep(p.cep).slice(0, 5);
             const ruaConfere = correspondeRua(rua, ruaEncontrada);
             // Se o cliente informou bairro, só aceitar resultado que confirme esse bairro.
             const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
@@ -368,9 +375,13 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
             const numeroConfere = !!numero && numeroEncontrado === numero;
             const lat = numeroValido(item.lat);
             const lon = numeroValido(item.lon);
+            const coords = lat !== null && lon !== null ? { lat, lon } : null;
+            const distanciaCep = p.coordsOrigem === "cep" && p.coords && coords
+              ? distanciaLinhaReta(p.coords, coords)
+              : null;
             return { lat, lon, ruaConfere, bairroConfere, bairroInformadoNoMapa: bairrosEncontrados.length > 0, numeroConfere,
-              pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
-                (bairroConfere ? 2 : 0) + (item.type === "house" ? 3 : 0) };
+              distanciaCep, pontos: (numeroConfere ? 8 : 0) + (ruaConfere ? 4 : 0) +
+                (bairroConfere ? 2 : 0) + (cepConfere ? 5 : 0) + (item.type === "house" ? 3 : 0) };
           })
           // Exige correspondência exata da rua e do número.
           // Se o mapa informar um bairro diferente, rejeita para evitar rua homônima.
@@ -416,15 +427,21 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           const ruaEncontrada = a.road ?? a.pedestrian ?? "";
           const bairrosEncontrados = [a.suburb, a.neighbourhood, a.quarter]
             .map((valor) => normalizarTexto(valor ?? "")).filter(Boolean);
+          const cepMapa = limparCep(a.postcode ?? "");
+          const cepConfere = !!p.cep && !!cepMapa && cepMapa.slice(0, 5) === limparCep(p.cep).slice(0, 5);
           const lat = numeroValido(item.lat);
           const lon = numeroValido(item.lon);
           const ruaConfere = correspondeRua(rua, ruaEncontrada);
           const bairroConfere = !bairroAlvo || bairrosEncontrados.some((b) =>
             b === bairroAlvo || b.includes(bairroAlvo) || bairroAlvo.includes(b));
+          const coords = lat !== null && lon !== null ? { lat, lon } : null;
+          const distanciaCep = p.coordsOrigem === "cep" && p.coords && coords
+            ? distanciaLinhaReta(p.coords, coords)
+            : null;
           return { lat, lon, ruaConfere, bairroConfere,
-            bairroInformadoNoMapa: bairrosEncontrados.length > 0,
+            bairroInformadoNoMapa: bairrosEncontrados.length > 0, distanciaCep,
             pontos: (ruaConfere ? 4 : 0) + (bairroConfere ? 2 : 0) +
-              (item.class === "highway" ? 2 : 0) };
+              (cepConfere ? 5 : 0) + (item.class === "highway" ? 2 : 0) };
         }).filter((item) =>
           item.lat !== null &&
           item.lon !== null &&
@@ -433,7 +450,12 @@ async function geocodificar(p: DadosEndereco): Promise<{ coords: CoordenadaGeo; 
           (/\b(br|ac)[\s-]*\d{1,3}\b/i.test(rua)
             ? item.bairroInformadoNoMapa && item.bairroConfere
             : true)
-        ).sort((a, b) => b.pontos - a.pontos);
+        ).sort((a, b) => {
+          if (a.distanciaCep !== null && b.distanciaCep !== null && a.distanciaCep !== b.distanciaCep) {
+            return a.distanciaCep - b.distanciaCep;
+          }
+          return b.pontos - a.pontos;
+        });
         const melhor = candidatos[0];
         if (melhor?.lat !== null && melhor?.lat !== undefined &&
             melhor?.lon !== null && melhor?.lon !== undefined) {
@@ -572,7 +594,7 @@ type OsrmResp = { routes?: { distance?: number }[] };
 export async function distanciaRota(
   origem: CoordenadaGeo,
   destino: CoordenadaGeo,
-): Promise<{ km: number; estimada: boolean; coords: CoordenadaGeo }> {
+): Promise<{ km: number; estimada: boolean }> {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${origem.lon},${origem.lat};${destino.lon},${destino.lat}?overview=false&alternatives=true`;
     const r = await fetchComTimeout(url, 7000);
