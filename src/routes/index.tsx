@@ -715,7 +715,7 @@ function Cardapio() {
       return;
     }
     const id = ++calcId.current;
-    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente, ...(coordsClienteOrigem ? { coordsOrigem: coordsClienteOrigem } : {}) }, id);
+    void calcular({ rua, numero, bairro, cidade, uf, coords: coordsCliente, cep: limparCep(cep), ...(coordsClienteOrigem ? { coordsOrigem: coordsClienteOrigem } : {}) }, id);
   }
 
   async function sendOrder() {
