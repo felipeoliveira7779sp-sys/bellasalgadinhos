@@ -97,7 +97,7 @@ function Cardapio() {
   const [introOpen, setIntroOpen] = useState(true);
 
   useEffect(() => {
-    const introTimer = window.setTimeout(() => setIntroOpen(false), 1650);
+    const introTimer = window.setTimeout(() => setIntroOpen(false), 2900);
     return () => window.clearTimeout(introTimer);
   }, []);
 
