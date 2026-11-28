@@ -2589,3 +2589,44 @@
   }
 }
 
+/* Relatórios e fechamento de caixa no painel */
+.bella.admin-page .admin-reports{margin:18px 0 22px!important}
+.bella.admin-page .admin-report-dates{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
+.bella.admin-page .admin-report-dates input{color-scheme:dark}
+.bella.admin-page .admin-report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.bella.admin-page .admin-report-kpi{min-width:0;padding:16px;border:1px solid #e5ad4340;border-radius:15px;background:linear-gradient(145deg,#30271b,#211c15)}
+.bella.admin-page .admin-report-kpi span{display:block;color:#d6c4a7;font-size:.75rem;font-weight:700;line-height:1.35}
+.bella.admin-page .admin-report-kpi strong{display:block;margin-top:8px;color:#ffd27c;font-size:clamp(1.15rem,2.6vw,1.7rem);font-weight:900;overflow-wrap:anywhere}
+.bella.admin-page .admin-report-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.bella.admin-page .admin-report-panel{min-width:0;padding:15px;border:1px solid #ffffff18;border-radius:14px;background:#171512}
+.bella.admin-page .admin-report-panel h3,.bella.admin-page .admin-report-list-title{margin:0 0 12px;color:#f1c66f;font-size:.9rem;font-weight:850}
+.bella.admin-page .admin-report-line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #ffffff12;color:#eee1cc;font-size:.82rem}
+.bella.admin-page .admin-report-line:last-child{border-bottom:0}
+.bella.admin-page .admin-report-line small{color:#a99b86}
+.bella.admin-page .admin-report-line b{color:#ffd27c;white-space:nowrap}
+.bella.admin-page .admin-report-table-wrap{max-width:100%;overflow-x:auto;border:1px solid #ffffff20;border-radius:13px}
+.bella.admin-page .admin-report-table{width:100%;border-collapse:collapse;min-width:720px;color:#f3e8d5;font-size:.78rem}
+.bella.admin-page .admin-report-table th{padding:11px 10px;background:#30271b;color:#ffd27c;text-align:left;white-space:nowrap}
+.bella.admin-page .admin-report-table td{padding:10px;border-top:1px solid #ffffff14;vertical-align:top}
+.bella.admin-page .admin-report-table td small{display:block;margin-top:3px;color:#b8a991}
+.bella.admin-page .admin-report-table td:nth-child(3){max-width:260px;white-space:normal}
+.bella.admin-page .admin-report-actions button{min-height:42px}
+@media(max-width:680px){
+  .bella.admin-page .admin-report-dates{grid-template-columns:1fr 1fr}
+  .bella.admin-page .admin-report-dates button{grid-column:1/-1}
+  .bella.admin-page .admin-report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bella.admin-page .admin-report-kpi{padding:13px}
+  .bella.admin-page .admin-report-columns{grid-template-columns:1fr}
+}
+@media print{
+  body *{visibility:hidden!important}
+  .bella.admin-page .admin-reports,.bella.admin-page .admin-reports *{visibility:visible!important}
+  .bella.admin-page .admin-reports{position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:12px!important;background:#fff!important;color:#111!important;border:0!important;box-shadow:none!important}
+  .bella.admin-page .admin-reports .admin-report-actions,.bella.admin-page .admin-reports .admin-report-dates,.bella.admin-page .admin-reports>div:first-child .admin-eyebrow{display:none!important}
+  .bella.admin-page .admin-reports h2,.bella.admin-page .admin-reports h3,.bella.admin-page .admin-reports p,.bella.admin-page .admin-reports span,.bella.admin-page .admin-reports b,.bella.admin-page .admin-reports td,.bella.admin-page .admin-reports th{color:#111!important}
+  .bella.admin-page .admin-report-kpi,.bella.admin-page .admin-report-panel{background:#fff!important;border:1px solid #bbb!important;break-inside:avoid}
+  .bella.admin-page .admin-report-table{color:#111!important;min-width:0!important;font-size:9px!important}
+  .bella.admin-page .admin-report-table th{background:#eee!important}
+  .bella.admin-page .admin-report-table-wrap{overflow:visible!important}
+}
+
