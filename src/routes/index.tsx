@@ -831,7 +831,11 @@ function Cardapio() {
           items: cart.map(({ key: _k, ...i }) => i),
         },
       });
-      txt = `🧾 *Pedido nº ${id.slice(0, 8).toUpperCase()}*\n` + txt;
+      // Mantém o número do pedido no mesmo cabeçalho da mensagem.
+      txt = txt.replace(
+        `🎉 *PEDIDO - ${store?.name ?? "BELLA SALGADINHOS"}*`,
+        `🎉 *PEDIDO Nº ${id.slice(0, 8).toUpperCase()} - ${store?.name ?? "BELLA SALGADINHOS"}*`,
+      );
     } catch (e) {
       setEnviando(false);
       alert(e instanceof Error ? e.message : "Não foi possível registrar o pedido.");
@@ -840,7 +844,9 @@ function Cardapio() {
     setEnviando(false);
     setCart([]);
     setCartOpen(false);
-    window.location.href = `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(txt)}`;
+    // Envia todo o pedido em um único parâmetro de texto do WhatsApp.
+    const whatsappUrl = `https://wa.me/${whatsLoja}?text=${encodeURIComponent(txt)}`;
+    window.location.assign(whatsappUrl);
   }
 
   const aberto = lojaEstaAberta(store?.open_status, new Date(), store?.hours_text);
