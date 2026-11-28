@@ -513,6 +513,22 @@ function Cardapio() {
     buscaRuaTimer.current = setTimeout(async () => {
       setBuscandoLocal(true);
       try {
+        // Aceita somente resultados cujo logradouro corresponda ao que foi digitado.
+        // Remove acentos e prefixos genéricos para comparar nomes de vias.
+        const normalizarVia = (texto: string) => texto
+          .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+          .toLocaleLowerCase("pt-BR")
+          .replace(/[^a-z0-9 ]/g, " ")
+          .split(/\\s+/)
+          .filter((p) => p && !["rua", "r", "avenida", "av", "travessa", "tv", "estrada", "rodovia", "alameda", "praça", "praca"].includes(p));
+        const termosDigitados = normalizarVia(valor);
+        const correspondeRua = (nome: string) => {
+          const termosCandidato = normalizarVia(nome);
+          return termosDigitados.length > 0 && termosDigitados.every((termo) =>
+            termosCandidato.some((parte) => parte.startsWith(termo) || termo.startsWith(parte))
+          );
+        };
+
         // 1) Fonte principal: busca oficial dos Correios via ViaCEP.
         // A API retorna logradouro, bairro e CEP; não fornece número da residência.
         let lista: {
@@ -538,7 +554,7 @@ function Cardapio() {
               | { cep?: string; logradouro?: string; bairro?: string; localidade?: string; uf?: string }[];
             if (Array.isArray(dadosCep)) {
               lista = dadosCep
-                .filter((item) => item.logradouro && item.cep && item.uf === "AC")
+                .filter((item) => item.logradouro && item.cep && item.uf === "AC" && correspondeRua(item.logradouro))
                 .map((item) => {
                   const logradouro = item.logradouro!.trim();
                   const bairroLocal = item.bairro?.trim() ?? "";
@@ -595,6 +611,7 @@ function Cardapio() {
             if (lat === undefined || lon === undefined) return [];
             const nome = p.name ?? "";
             const logradouro = p.street ?? nome;
+            if (!logradouro || !correspondeRua(logradouro)) return [];
             const bairroLocal = p.district ?? p.suburb ?? p.neighbourhood ?? p.locality ?? "";
             const cidadeLocal = p.city ?? p.county ?? "Rio Branco";
             const label = [nome, logradouro !== nome ? logradouro : "", p.housenumber, bairroLocal, cidadeLocal, "AC"].filter(Boolean).join(", ");
