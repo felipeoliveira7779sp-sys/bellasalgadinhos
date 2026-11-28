@@ -1160,3 +1160,67 @@
     transition-duration: .01ms !important;
   }
 }
+
+/* BELLA — visual premium grafite + âmbar; somente apresentação */
+.bella.menu-page{--bs-brand:#e5ad43;--bs-bg:#100f0d;--bs-card:#191714;--bs-surface:#211e19;--bs-surface-soft:#171512;--bs-ink:#fff8eb;--bs-muted:#b5aa98;--bs-line:rgba(229,173,67,.2);--bs-line-strong:rgba(229,173,67,.45);background:radial-gradient(ellipse at 50% 0%,rgba(180,119,34,.2),transparent 34rem),#100f0d!important}
+.bella.menu-page .app-container{max-width:1040px;padding:22px 20px 140px}
+.bella.menu-page header{padding-top:4px}
+.bella.menu-page .store-cover{height:clamp(260px,39vw,430px);margin:0;border:1px solid rgba(229,173,67,.32);border-radius:30px;background-color:#292117;box-shadow:0 30px 90px #0009,0 0 55px #e5ad4317;animation:bella-hero-arrive .8s both}
+.bella.menu-page .store-cover:after{background:linear-gradient(90deg,#0c0b09b8,#0c0b0910 70%),linear-gradient(0deg,#0c0b09e8,transparent 72%)}
+.bella.menu-page .store-cover:before{content:"FEITO COM CARINHO, SERVIDO COM SABOR";position:absolute;z-index:1;left:clamp(20px,5vw,58px);bottom:34px;max-width:70%;color:#f4c76b;font-size:clamp(.65rem,1.5vw,.82rem);font-weight:900;letter-spacing:.2em;text-shadow:0 2px 18px #000}
+.bella.menu-page .store-logo-main{left:auto;right:clamp(20px,5vw,58px);bottom:26px;width:104px;height:104px;transform:none;border:3px solid #e5ad43;box-shadow:0 10px 35px #000a,0 0 30px #e5ad4333;animation:bella-logo-float 5s ease-in-out infinite}
+.bella.menu-page .store-info-card{z-index:2;margin:-1px 24px 0;padding:26px 24px 24px;border:1px solid #e5ad433d;border-top:0;border-radius:0 0 24px 24px;background:linear-gradient(135deg,#221d15fa,#161411fa);box-shadow:0 22px 55px #0005;animation:bella-info-arrive .8s .12s both}
+.bella.menu-page .store-eyebrow{color:#e5ad43;letter-spacing:.28em}
+.bella.menu-page .store-name{color:#fff8eb;font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.045em}
+.bella.menu-page .store-desc{color:#c3b8a5;max-width:620px}
+.bella.menu-page .store-badges span{border-color:#e5ad4340;background:#0003;color:#e9dfcd;padding:7px 14px}
+.bella.menu-page .sticky-nav{top:10px;margin:24px 0 16px;padding:10px;border:1px solid #e5ad4338;border-radius:18px;background:#13110eeb;box-shadow:0 15px 42px #0006}
+.bella.menu-page .nav-item{border-radius:12px;color:#c4b9a7;padding:10px 18px}
+.bella.menu-page .nav-item.active{border-color:#e5ad43;background:linear-gradient(135deg,#f0c66f,#c98c2c);color:#21170a;box-shadow:0 6px 22px #e5ad4338}
+.bella.menu-page .menu-section{padding:16px 4px 20px}
+.bella.menu-page .section-title{margin:18px 0;font-size:clamp(1.45rem,3vw,1.9rem);color:#fff5e2}
+.bella.menu-page .section-title:before{height:30px;width:5px;background:linear-gradient(#f6d27e,#b97821)}
+.bella.menu-page .product-card{min-height:158px;margin-bottom:14px;padding:18px;border:1px solid #e5ad432b;border-radius:21px;background:linear-gradient(115deg,#231f19,#181613);box-shadow:0 14px 38px #0004;animation:bella-card-arrive .55s both}
+.bella.menu-page .product-card:before{width:4px;opacity:1;background:linear-gradient(#f6d27e,#b97821)}
+.bella.menu-page .product-card:hover{transform:translateY(-4px);border-color:#e5ad4385;box-shadow:0 22px 48px #0006,0 0 28px #e5ad4312}
+.bella.menu-page .product-title{color:#fff8eb;font-size:1.08rem}
+.bella.menu-page .product-desc{color:#b9ad9a}
+.bella.menu-page .product-price{color:#f0bd5c;font-size:1.12rem}
+.bella.menu-page .product-img{width:132px;height:132px;border:1px solid #e5ad434d;border-radius:17px}
+.bella.menu-page .product-add{border-color:#211b12;background:linear-gradient(135deg,#f4cf7c,#c98a2b);color:#201609}
+.bella.menu-page .float-cart-bar{border:1px solid #ffe0a0b3;background:linear-gradient(110deg,#f2c66e,#c88a2c);color:#21170a;box-shadow:0 18px 48px #0008,0 0 35px #e5ad432e}
+.bella.menu-page .bottom-sheet{border:1px solid #e5ad434d;background:linear-gradient(160deg,#211e19,#151310);color:#fff8eb}
+.bella.menu-page .modal-title{color:#fff4df}.bella.menu-page .modal-desc{color:#b9ad9a}
+.bella.menu-page .obs-box,.bella.menu-page .option-row,.bella.menu-page .input-control,.bella.menu-page .receipt-card{border-color:#e5ad4333!important;background:#171512!important;color:#fff4df!important}
+.bella.menu-page .btn-add,.bella.menu-page .btn-whatsapp,.bella.menu-page .btn-calculate,.bella.menu-page .btn-location{border:1px solid #ffe0a08c;background:linear-gradient(110deg,#f2c66e,#c88a2c);color:#21170a;box-shadow:0 10px 26px #c98a2b29}
+.bella.menu-page .receipt-total{color:#f2c66e}
+.bella.menu-page .bella-reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.75,.25,1)}
+.bella.menu-page .bella-reveal.is-visible{opacity:1;transform:translateY(0)}
+.bella.admin-page{min-height:100vh;padding:26px 0 70px;background:radial-gradient(ellipse at 50% 0%,#b4772229,transparent 32rem),#100f0d!important;color:#fff6e6!important;color-scheme:dark}
+.bella.admin-page .admin-container{max-width:1040px;padding:0 22px 60px}
+.bella.admin-page .admin-header{margin:0 0 24px;padding:34px 32px;border:1px solid #e5ad4347;border-radius:26px;background:linear-gradient(125deg,#282116,#171512 72%);box-shadow:0 24px 60px #0006}
+.bella.admin-page .admin-eyebrow{color:#e5ad43!important;font-size:.72rem;font-weight:900;letter-spacing:.24em;text-transform:uppercase}
+.bella.admin-page .admin-title{margin:8px 0;color:#fff5e1!important;font-family:"Fraunces",Georgia,serif;font-size:clamp(2rem,5vw,3rem);letter-spacing:-.04em}
+.bella.admin-page .admin-description{color:#c1b49e!important}
+.bella.admin-page .admin-quick-card,.bella.admin-page details,.bella.admin-page section,.bella.admin-page .admin-message{border:1px solid #e5ad4333!important;border-radius:19px!important;background:linear-gradient(145deg,#211e19,#181613)!important;color:#fff4df!important;box-shadow:0 14px 38px #0004}
+.bella.admin-page .admin-quick-card{padding:22px!important;margin-bottom:18px}
+.bella.admin-page details{margin:0 0 14px;overflow:hidden}
+.bella.admin-page details>summary,.bella.admin-page .admin-section-heading{padding:18px 20px;color:#f1c66f!important;font-weight:850;cursor:pointer}
+.bella.admin-page details[open]>summary{border-bottom:1px solid #e5ad4329}
+.bella.admin-page details>div{color:#e9deca!important}
+.bella.admin-page input:not([type=checkbox]),.bella.admin-page textarea,.bella.admin-page select{min-height:43px;border:1px solid #e5ad433d!important;border-radius:11px!important;background:#12110f!important;color:#fff5e4!important;padding:10px 12px!important}
+.bella.admin-page input::placeholder,.bella.admin-page textarea::placeholder{color:#8e8372!important}
+.bella.admin-page button{border-radius:11px!important;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
+.bella.admin-page button:not(:disabled):hover{filter:brightness(1.1);transform:translateY(-1px)}
+.bella.admin-page button[style*="background"],.bella.admin-page .admin-login-button{border:1px solid #ffe0a08c!important;background:linear-gradient(110deg,#f2c66e,#c88a2c)!important;color:#21170a!important;font-weight:850}
+.bella.admin-page button[style*="background: transparent"],.bella.admin-page button[style*="background-color: transparent"]{border:1px solid #e5ad4342!important;background:#191714!important;color:#e9c77f!important}
+.bella.admin-page a{color:#f0bd5c!important}
+.bella.admin-page .admin-login-container{max-width:520px;margin:8vh auto 0;padding:0 20px;text-align:center}
+.bella.admin-page .admin-login-mark{display:grid;width:76px;height:76px;margin:0 auto 18px;place-items:center;border:1px solid #ffe0a0a6;border-radius:23px;background:linear-gradient(135deg,#f2c66e,#bd7d25);color:#21170a;font:900 1.8rem Georgia,serif;box-shadow:0 12px 35px #e5ad4333}
+.bella.admin-page .admin-login-title{color:#fff5e1!important;font-family:"Fraunces",Georgia,serif;font-size:2.3rem}
+.bella.admin-page .admin-login-desc{color:#b9ad9a!important}
+.bella.admin-page .admin-login-card{padding:28px!important;border:1px solid #e5ad4340!important;border-radius:22px!important;background:linear-gradient(145deg,#211e19,#171512)!important;box-shadow:0 25px 70px #0006;text-align:left}
+.bella.admin-page .admin-field-label{color:#eac879!important}
+.bella.admin-page .owner-link{color:#a99b86!important}
+@media(max-width:640px){.bella.menu-page .app-container{padding:12px 12px 125px}.bella.menu-page .store-cover{height:255px;border-radius:22px}.bella.menu-page .store-cover:before{left:18px;bottom:24px;max-width:62%;font-size:.58rem;letter-spacing:.13em}.bella.menu-page .store-logo-main{width:76px;height:76px;right:16px;bottom:18px}.bella.menu-page .store-info-card{margin-inline:8px;padding:24px 16px 20px}.bella.menu-page .product-card{min-height:128px;padding:12px;gap:12px}.bella.menu-page .product-img{width:104px;height:104px}.bella.admin-page .admin-container{padding-inline:14px}.bella.admin-page .admin-header{padding:25px 20px}}
+@media(prefers-reduced-motion:reduce){.bella.menu-page .bella-reveal,.bella.menu-page .product-card,.bella.menu-page .store-cover,.bella.menu-page .store-info-card{animation:none!important;transition:none!important}}
