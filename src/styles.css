@@ -1977,3 +1977,59 @@
 .bella.menu-page .product-sheet .qty-value{
   color:#30332d!important;
 }
+
+
+/* Destaque da abertura do cardápio e acabamento dos botões de fechar/remover */
+.bella.menu-page .ember-hero{
+  border:1.5px solid #e39a5e!important;
+  box-shadow:0 24px 58px #9a59251c,0 0 0 4px #e39a5e18,0 0 34px #d9783520!important;
+}
+.bella.menu-page .ember-hero:after{
+  background:
+    linear-gradient(90deg,rgba(250,248,242,.91) 0%,rgba(250,248,242,.79) 38%,rgba(250,248,242,.36) 70%,rgba(250,248,242,.06) 100%),
+    linear-gradient(0deg,rgba(217,120,53,.13),transparent 58%)!important;
+}
+.bella.menu-page .ember-hero-shade{
+  background:radial-gradient(ellipse at 78% 48%,#e58b4938,transparent 38%)!important;
+}
+.bella.menu-page .ember-display{text-shadow:0 2px 0 #fff8,0 8px 24px #fff4!important}
+.bella.menu-page .ember-script{color:#a45a2b!important;text-shadow:0 1px 0 #fff8}
+.bella.menu-page .ember-primary-action{
+  border:1px solid #f4c49f!important;
+  box-shadow:0 12px 30px #c66f3245,0 0 0 4px #d9783518!important;
+}
+.bella.menu-page .store-info-card{
+  border:1px solid #e5b18a!important;
+  box-shadow:0 14px 35px #c66f3217,0 0 0 3px #d978350c!important;
+}
+.bella.menu-page .product-sheet .btn-close,
+.bella.menu-page .cart-sheet .btn-close{
+  border:1px solid #f2c19d!important;
+  background:linear-gradient(145deg,#fff3e8,#f7d5bc)!important;
+  color:#a94f20!important;
+  box-shadow:0 5px 16px #c66f3230!important;
+  transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;
+}
+.bella.menu-page .product-sheet .btn-close:hover,
+.bella.menu-page .cart-sheet .btn-close:hover{
+  transform:rotate(90deg);
+  filter:brightness(1.03);
+  box-shadow:0 7px 20px #c66f3240!important;
+}
+.bella.menu-page .cart-sheet .cart-remove{
+  border:1px solid #edc2a4!important;
+  border-radius:999px!important;
+  background:#fff1e7!important;
+  color:#a94f20!important;
+}
+.bella.menu-page .cart-sheet .cart-remove:hover{
+  background:#fbe1cf!important;
+  border-color:#d98545!important;
+}
+@media(max-width:640px){
+  .bella.menu-page .ember-hero:after{
+    background:
+      linear-gradient(90deg,rgba(250,248,242,.91),rgba(250,248,242,.75) 65%,rgba(250,248,242,.32)),
+      linear-gradient(0deg,rgba(217,120,53,.15),transparent 62%)!important;
+  }
+}
