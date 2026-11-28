@@ -321,6 +321,19 @@ export const fetchOrdersReport = createServerFn({ method: "POST" })
     return { orders: rows ?? [], totalCount: count ?? 0, truncated: (count ?? 0) > 5000 };
   });
 
+
+const setOrderCanceledSchema = z.object({ password: z.string(), orderId: z.string().min(1) });
+
+export const cancelOrderFromReport = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => setOrderCanceledSchema.parse(d))
+  .handler(async ({ data }) => {
+    checkPassword(data.password);
+    const db = await admin();
+    const { error } = await db.from("orders").update({ status: "cancelado" }).eq("id", data.orderId);
+    if (error) throw new Error("Não foi possível marcar o pedido como cancelado: " + error.message);
+    return { ok: true };
+  });
+
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderSchema.parse(d))
   .handler(async ({ data }) => {
