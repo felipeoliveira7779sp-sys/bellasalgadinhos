@@ -2630,3 +2630,13 @@
   .bella.admin-page .admin-report-table-wrap{overflow:visible!important}
 }
 
+/* Produto indisponível: aparência cinza evidente, sem perder legibilidade */
+.bella.menu-page .ember-product-card.is-disabled{opacity:1!important;filter:grayscale(1)!important;background:linear-gradient(145deg,#e2e2e2,#c9c9c9)!important;border:1px solid #929292!important;box-shadow:0 5px 16px #0002!important;cursor:not-allowed!important}
+.bella.menu-page .ember-product-card.is-disabled .ember-product-media{filter:grayscale(1)}
+.bella.menu-page .ember-product-card.is-disabled .product-img{filter:grayscale(1) brightness(.78)!important}
+.bella.menu-page .ember-product-card.is-disabled .product-title{color:#303030!important}
+.bella.menu-page .ember-product-card.is-disabled .product-desc{color:#555!important}
+.bella.menu-page .ember-product-card.is-disabled .product-price{color:#444!important}
+.bella.menu-page .ember-product-card.is-disabled .ember-product-cta{color:#555!important}
+.bella.menu-page .ember-product-card.is-disabled .product-unavailable{position:absolute;z-index:2;top:10px;left:10px;padding:7px 11px;border:1px solid #777;border-radius:8px;background:#444!important;color:#fff!important;font-size:.68rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.bella.menu-page .ember-product-card.is-disabled .product-add{display:none!important}
