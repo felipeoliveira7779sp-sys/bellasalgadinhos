@@ -1357,3 +1357,82 @@
   animation:none!important
  }
 }
+
+
+/* EMBER GOLD -> BELLA SALGADINHOS: identidade visual e movimentos */
+.bella.menu-page{--ember-gold:#f3b94f;--ember-gold-light:#ffd98a;--ember-black:#100e0b;--ember-panel:#191612;--ember-muted:#b8ad9c;background:radial-gradient(ellipse at 50% -8%,#8f5b1c38,transparent 38rem),#100e0b!important;color:#fff8ec}
+.bella.menu-page .app-container{width:min(100% - 32px,1240px);max-width:1240px;padding:18px 0 150px}
+.bella.menu-page .ember-hero{position:relative;display:flex;align-items:center;min-height:clamp(430px,54vw,650px);height:auto;margin:0;overflow:hidden;border:1px solid #f3b94f38;border-radius:30px;background-color:#211a10;background-position:center;background-size:cover;isolation:isolate;box-shadow:0 32px 90px #0009,0 0 70px #e4a83b12;animation:ember-hero-enter 1s cubic-bezier(.16,1,.3,1) both}
+.bella.menu-page .ember-hero:before{content:none!important}
+.bella.menu-page .ember-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0b0907f2 0%,#0b0907d9 38%,#0b09075c 72%,#0b09071c 100%),linear-gradient(0deg,#0b0907b8,transparent 48%);pointer-events:none}
+.bella.menu-page .ember-hero-shade{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 78% 48%,#f0ad3c24,transparent 34%);pointer-events:none}
+.bella.menu-page .ember-hero-copy{position:relative;z-index:2;width:min(690px,75%);padding:clamp(34px,7vw,86px);animation:ember-copy-enter .9s .15s both}
+.bella.menu-page .ember-script{margin:0 0 8px;color:var(--ember-gold-light);font-family:"Caveat Brush",cursive;font-size:clamp(1.8rem,4vw,3rem);line-height:1.05;transform:rotate(-2deg);transform-origin:left center}
+.bella.menu-page .ember-display{margin:0;color:#fff8eb;font-family:"Bebas Neue",Impact,sans-serif;font-size:clamp(4rem,10vw,8.5rem);font-weight:400;letter-spacing:-.025em;line-height:.86;text-wrap:balance;text-shadow:0 8px 34px #0008}
+.bella.menu-page .ember-hero-description{max-width:490px;margin:22px 0 0;color:#e4d8c4;font-size:clamp(.95rem,1.6vw,1.12rem);line-height:1.7}
+.bella.menu-page .ember-hero-actions{display:flex;align-items:center;flex-wrap:wrap;gap:18px;margin-top:30px}
+.bella.menu-page .ember-primary-action{display:inline-flex;align-items:center;gap:18px;min-height:54px;padding:0 24px;border:1px solid #ffe3a4;background:linear-gradient(135deg,#ffd987,#d99631);border-radius:13px;color:#211507;font-size:.78rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;box-shadow:0 12px 34px #c987293d;transition:transform .25s ease,box-shadow .25s ease,filter .25s ease}
+.bella.menu-page .ember-primary-action:hover{transform:translateY(-3px);filter:brightness(1.08);box-shadow:0 18px 42px #d9963159}
+.bella.menu-page .ember-primary-action span{font-size:1.25rem;transition:transform .25s ease}
+.bella.menu-page .ember-primary-action:hover span{transform:translate(3px,-3px)}
+.bella.menu-page .ember-open-state{display:inline-flex;align-items:center;gap:9px;color:#e2d5c1;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.bella.menu-page .ember-open-state i{width:8px;height:8px;border-radius:50%;background:#dc765c;box-shadow:0 0 0 5px #dc765c22}
+.bella.menu-page .ember-open-state.is-open i{background:#65cf88;box-shadow:0 0 0 5px #65cf8825;animation:ember-status-pulse 2.2s infinite}
+.bella.menu-page .store-logo-main{z-index:3;right:clamp(20px,4vw,52px);bottom:clamp(20px,4vw,48px);left:auto;width:clamp(74px,10vw,118px);height:clamp(74px,10vw,118px);border:2px solid #f6cb7a;border-radius:26px;object-fit:cover;box-shadow:0 18px 45px #0009,0 0 35px #e5ad4333;animation:ember-logo-float 5s ease-in-out infinite}
+.bella.menu-page .ember-hero-stamp{position:absolute;z-index:2;right:clamp(22px,5vw,64px);top:clamp(22px,5vw,58px);display:flex;width:112px;height:112px;flex-direction:column;align-items:center;justify-content:center;border:1px solid #f6cb7a9c;border-radius:50%;background:#100d09a8;box-shadow:inset 0 0 0 5px #f6cb7a12,0 12px 34px #0007;backdrop-filter:blur(9px);color:#f7ce7c;transform:rotate(9deg);animation:ember-stamp-in .9s .5s both,ember-stamp-float 4s 1.5s ease-in-out infinite}
+.bella.menu-page .ember-hero-stamp span{font-family:"Bebas Neue",Impact,sans-serif;font-size:1.8rem;letter-spacing:.1em;line-height:1}
+.bella.menu-page .ember-hero-stamp b{font-size:1.05rem;line-height:1.2}
+.bella.menu-page .ember-hero-stamp small{font-size:.42rem;font-weight:900;letter-spacing:.13em}
+.bella.menu-page .store-info-card{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 24px;padding:18px 26px;border:1px solid #e8b65339;border-top:0;border-radius:0 0 22px 22px;background:linear-gradient(110deg,#211b12,#15120e);box-shadow:0 20px 50px #0005;animation:ember-copy-enter .7s .25s both}
+.bella.menu-page .store-eyebrow{margin:0;color:#efbf65;font-size:.67rem;font-weight:950;letter-spacing:.2em;text-transform:uppercase}
+.bella.menu-page .store-badges{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.bella.menu-page .store-badges span{padding:7px 12px;border:1px solid #e8b65335;border-radius:999px;background:#100e0b;color:#e8ddc9;font-size:.68rem;font-weight:800;letter-spacing:.04em}
+.bella.menu-page .store-badges .badge-open{border-color:#65cf8866;color:#8be0a4}.bella.menu-page .store-badges .badge-closed{border-color:#dc765c66;color:#f2a18b}
+.bella.menu-page .sticky-nav{position:sticky;top:12px;z-index:30;display:flex;gap:9px;margin:28px 0 24px;padding:11px;overflow-x:auto;border:1px solid #e8b65335;border-radius:17px;background:#100e0beF;box-shadow:0 16px 44px #0007;backdrop-filter:blur(20px);scrollbar-width:none}
+.bella.menu-page .sticky-nav::-webkit-scrollbar{display:none}
+.bella.menu-page .nav-item{flex:0 0 auto;min-height:42px;padding:0 19px;border:1px solid transparent;border-radius:11px;background:transparent;color:#c8bca8;font-size:.78rem;font-weight:850;letter-spacing:.02em;white-space:nowrap;transition:color .25s ease,background .25s ease,border-color .25s ease,transform .25s ease}
+.bella.menu-page .nav-item:hover{color:#fff1d4;border-color:#e8b65350;transform:translateY(-2px)}
+.bella.menu-page .nav-item.active{border-color:#ffdfa0;background:linear-gradient(135deg,#ffd987,#d99631);color:#211507;box-shadow:0 7px 24px #d9963138}
+.bella.menu-page .ember-catalog{scroll-margin-top:100px}
+.bella.menu-page .menu-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:22px 0 38px;scroll-margin-top:105px}
+.bella.menu-page .section-title{grid-column:1/-1;display:flex;align-items:center;gap:14px;margin:8px 0 8px;color:#fff4df;font-family:"Bebas Neue",Impact,sans-serif;font-size:clamp(2.1rem,4vw,3rem);font-weight:400;letter-spacing:.025em;line-height:1}
+.bella.menu-page .section-title:before{width:5px;height:35px;border-radius:8px;background:linear-gradient(#ffdc91,#c27e23);box-shadow:0 0 22px #e8b65355}
+.bella.menu-page .ember-product-card{display:flex;min-width:0;min-height:0;flex-direction:column;gap:0;padding:0;overflow:hidden;border:1px solid #e8b6532e;border-radius:20px;background:linear-gradient(145deg,#211c15,#15120f);box-shadow:0 12px 34px #0005;text-align:left;transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .3s ease,box-shadow .3s ease;animation:ember-card-enter .65s both}
+.bella.menu-page .ember-product-card:nth-of-type(2n){animation-delay:.06s}
+.bella.menu-page .ember-product-card:hover:not(:disabled){transform:translateY(-7px);border-color:#e8b653a6;box-shadow:0 24px 50px #0008,0 0 28px #e8b65312}
+.bella.menu-page .ember-product-card:active:not(:disabled){transform:scale(.985)}
+.bella.menu-page .ember-product-media{position:relative;display:grid;aspect-ratio:1.35/1;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#3b2b16,#17130e 72%)}
+.bella.menu-page .ember-product-media:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(0deg,#100d0bc9,transparent);pointer-events:none}
+.bella.menu-page .ember-product-media .product-img{display:block;width:100%;height:100%;max-width:none;max-height:none;border:0;border-radius:0;object-fit:cover;transition:transform .8s cubic-bezier(.2,.7,.2,1),filter .5s ease}
+.bella.menu-page .ember-product-card:hover .ember-product-media .product-img{transform:scale(1.09);filter:saturate(1.12)}
+.bella.menu-page .ember-image-placeholder{display:grid;width:100%;height:100%;place-items:center;color:#e7b95f;font-size:3rem;background:radial-gradient(circle,#6d4a1c55,transparent 55%);animation:ember-placeholder-glow 4s ease-in-out infinite}
+.bella.menu-page .ember-product-media .product-add{position:absolute;z-index:2;right:13px;bottom:13px;display:grid;width:42px;height:42px;place-items:center;border:1px solid #ffe2a0;border-radius:13px;background:linear-gradient(135deg,#ffdc91,#d18e2e);color:#211507;font-size:1.65rem;font-weight:500;box-shadow:0 8px 22px #0007;transition:transform .25s ease,box-shadow .25s ease}
+.bella.menu-page .ember-product-card:hover .product-add{transform:rotate(90deg) scale(1.08);box-shadow:0 10px 28px #d9963166}
+.bella.menu-page .ember-product-media .product-unavailable{position:absolute;z-index:3;top:12px;left:12px;padding:6px 10px;border:1px solid #fff3;border-radius:999px;background:#100d0bd9;color:#ffe3ad;font-size:.63rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.bella.menu-page .ember-product-info,.bella.menu-page .ember-product-card .product-info{display:flex;flex:1;flex-direction:column;gap:8px;padding:15px 16px 17px}
+.bella.menu-page .ember-product-card .product-title{display:block;margin:0;color:#fff5e3;font-size:clamp(.87rem,1.3vw,1.02rem);font-weight:900;letter-spacing:.015em;line-height:1.25}
+.bella.menu-page .ember-product-card .product-desc{display:-webkit-box;min-height:2.7em;margin:0;overflow:hidden;color:#b8ad9c;font-size:.75rem;line-height:1.45;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bella.menu-page .ember-product-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px;border-top:1px solid #e8b65322}
+.bella.menu-page .ember-product-card .product-price{color:#f4c66e;font-family:"Bebas Neue",Impact,sans-serif;font-size:1.55rem;font-weight:400;letter-spacing:.025em;line-height:1.1}
+.bella.menu-page .ember-product-cta{display:inline-flex;align-items:center;gap:5px;color:#d8bd8b;font-size:.61rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.bella.menu-page .ember-product-cta span{color:#f3bf5e;font-size:.95rem;transition:transform .2s ease}
+.bella.menu-page .ember-product-card:hover .ember-product-cta span{transform:translate(2px,-2px)}
+.bella.menu-page .menu-feedback{grid-column:1/-1;padding:28px;border:1px solid #e8b65335;border-radius:16px;background:#191510;color:#e9d7b7;text-align:center}
+.bella.menu-page .owner-link{display:block;width:max-content;margin:30px auto 0;color:#9f927e!important;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+.bella.menu-page .product-sheet,.bella.menu-page .cart-sheet{border:1px solid #e8b65366;background:radial-gradient(ellipse at 85% 0%,#d996311a,transparent 22rem),linear-gradient(160deg,#211c15,#100e0b);box-shadow:0 -25px 90px #000a}
+.bella.menu-page .modal-title,.bella.menu-page .cart-title{font-family:"Bebas Neue",Impact,sans-serif;font-size:2rem;font-weight:400;letter-spacing:.03em}
+.bella.menu-page .modal-price{color:#f3c46b;font-family:"Bebas Neue",Impact,sans-serif;font-size:1.8rem}
+.bella.menu-page .btn-add,.bella.menu-page .btn-whatsapp{min-height:54px;border-radius:13px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;transition:transform .2s ease,filter .2s ease,box-shadow .2s ease}
+.bella.menu-page .btn-add:hover,.bella.menu-page .btn-whatsapp:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.07);box-shadow:0 14px 34px #d996314c}
+@keyframes ember-hero-enter{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes ember-copy-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ember-stamp-in{from{opacity:0;scale:.65;rotate:-12deg}to{opacity:1;scale:1;rotate:9deg}}
+@keyframes ember-stamp-float{0%,100%{translate:0 0}50%{translate:0 -8px}}
+@keyframes ember-logo-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@keyframes ember-status-pulse{0%,100%{box-shadow:0 0 0 4px #65cf8822}50%{box-shadow:0 0 0 8px #65cf8810}}
+@keyframes ember-card-enter{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ember-placeholder-glow{0%,100%{opacity:.7;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+@media(min-width:760px){.bella.menu-page .menu-section{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.bella.menu-page .ember-product-media{aspect-ratio:1.2/1}.bella.menu-page .ember-product-card .product-info{padding:18px 19px 20px}}
+@media(min-width:1100px){.bella.menu-page .menu-section{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}.bella.menu-page .ember-product-media{aspect-ratio:1.12/1}}
+@media(max-width:640px){.bella.menu-page .app-container{width:calc(100% - 22px);padding-top:10px}.bella.menu-page .ember-hero{min-height:490px;border-radius:22px;background-position:58% center}.bella.menu-page .ember-hero:after{background:linear-gradient(90deg,#0b0907ed,#0b0907a8 65%,#0b09075c),linear-gradient(0deg,#0b0907bd,transparent 65%)}.bella.menu-page .ember-hero-copy{width:100%;padding:34px 22px 110px}.bella.menu-page .ember-display{max-width:95%;font-size:clamp(4rem,17vw,6rem)}.bella.menu-page .ember-hero-description{max-width:90%;margin-top:17px;font-size:.9rem}.bella.menu-page .ember-hero-actions{gap:14px;margin-top:22px}.bella.menu-page .ember-primary-action{min-height:48px;padding:0 17px;font-size:.68rem}.bella.menu-page .ember-hero-stamp{top:auto;right:16px;bottom:18px;width:82px;height:82px}.bella.menu-page .ember-hero-stamp span{font-size:1.35rem}.bella.menu-page .ember-hero-stamp small{font-size:.34rem}.bella.menu-page .store-logo-main{right:112px;bottom:23px;width:68px;height:68px;border-radius:18px}.bella.menu-page .store-info-card{align-items:flex-start;flex-direction:column;margin:0 8px;padding:15px 16px}.bella.menu-page .store-eyebrow{font-size:.58rem}.bella.menu-page .sticky-nav{top:6px;margin:18px 0 16px;padding:8px}.bella.menu-page .nav-item{min-height:39px;padding:0 14px;font-size:.7rem}.bella.menu-page .menu-section{gap:11px;padding:18px 0 30px}.bella.menu-page .section-title{margin:7px 0 5px;font-size:2.15rem}.bella.menu-page .ember-product-card{border-radius:15px}.bella.menu-page .ember-product-media{aspect-ratio:1/1}.bella.menu-page .ember-product-media .product-add{right:8px;bottom:8px;width:34px;height:34px;border-radius:10px;font-size:1.3rem}.bella.menu-page .ember-product-info,.bella.menu-page .ember-product-card .product-info{gap:6px;padding:10px 10px 12px}.bella.menu-page .ember-product-card .product-title{font-size:.78rem}.bella.menu-page .ember-product-card .product-desc{font-size:.66rem;min-height:2.7em}.bella.menu-page .ember-product-bottom{align-items:flex-start;flex-direction:column;gap:5px;padding-top:8px}.bella.menu-page .ember-product-card .product-price{font-size:1.35rem}.bella.menu-page .ember-product-cta{font-size:.55rem}.bella.menu-page .product-sheet,.bella.menu-page .cart-sheet{max-height:94dvh;border-radius:24px 24px 0 0}}
+@media(prefers-reduced-motion:reduce){.bella.menu-page .ember-hero,.bella.menu-page .ember-hero-copy,.bella.menu-page .ember-hero-stamp,.bella.menu-page .store-logo-main,.bella.menu-page .ember-product-card,.bella.menu-page .ember-image-placeholder{animation:none!important;transition:none!important}}
