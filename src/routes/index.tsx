@@ -483,6 +483,17 @@ function Cardapio() {
     }
   }
 
+  // Cancela autocomplete anterior para impedir que respostas atrasadas
+  // reabram sugestões de um endereço que o cliente já trocou ou selecionou.
+  function cancelarBuscaRua() {
+    buscaRuaId.current++;
+    if (buscaRuaTimer.current) {
+      clearTimeout(buscaRuaTimer.current);
+      buscaRuaTimer.current = null;
+    }
+    setBuscandoLocal(false);
+  }
+
   function aoDigitarRua(valor: string) {
     setBairroBloqueado(false);
     setRua(valor);
@@ -621,6 +632,7 @@ function Cardapio() {
   }
 
   function selecionarSugestaoRua(s: { id: string; label: string; rua: string; numero: string; bairro: string; cidade: string; uf: string; cep: string; lat: number; lon: number }) {
+    cancelarBuscaRua();
     setSugestoesRua([]);
     setRua(s.rua || s.label);
     // ViaCEP não retorna número. Nesse caso, deixa o campo vazio para o cliente informar.
@@ -643,6 +655,9 @@ function Cardapio() {
   }
 
   function aoDigitarCep(valor: string) {
+    cancelarBuscaRua();
+    setSugestoesRua([]);
+    setErroBuscaLocal("");
     setBairroBloqueado(false);
     const formatado = formatarCep(valor);
     setCep(formatado);
@@ -699,6 +714,7 @@ function Cardapio() {
         setBairroBloqueado(Boolean(bairroGps)); setCidade("Rio Branco"); setUf("AC");
         setCep(a.postcode ? formatarCep(a.postcode) : "");
         setCoordsCliente(coords); setCoordsClienteOrigem("gps");
+        cancelarBuscaRua();
         setSugestoesRua([]); setErroBuscaLocal("");
         void calcular({ rua: ruaGps, numero: numeroGps, bairro: bairroGps, cidade: "Rio Branco", uf: "AC", coords, coordsOrigem: "gps" }, id);
       } catch (error) {
